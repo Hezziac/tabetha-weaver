@@ -159,11 +159,10 @@ select:hover {
 
 .send-btn {
     position: absolute;
-    top: 50%;
     right: 10px;
-    transform: translateY(-50%);
-    background-color: #4f46e5;
-    color: white;
+    top: 16%;
+    background-color: #4842ba;
+    color: rgb(255, 255, 255);
     border: none;
     border-radius: 6px;
     padding: 6px 12px;
@@ -185,7 +184,7 @@ select:hover {
 }
 
 .send-btn:active {
-    transform: translateY(-50%) scale(0.97);
+    transform: translateY(-50%) scale(1.05);
 }
 
 .paste-summarize-area {
@@ -226,7 +225,7 @@ select:hover {
 
 
 #submit-pasted-btn {
-    background-color: #6B8EB6;
+    background-color: #28a745;
     color: white;
     font-size: 0.9rem;
     padding: 8px 15px;
@@ -299,6 +298,10 @@ select:hover {
    SECTION: Settings Button Popup
    --------------------------------- */
 
+    #settings-btn {
+        border-width: 1px;
+    }
+
    #settings-btn:hover {
     background-color: #2aa7d0;
     transform: scale(1.1);
@@ -310,6 +313,7 @@ select:hover {
    --------------------------------- */
 
 #writer-mode-btn:hover {
+    box-shadow: 6px 6px 13px rgba(0, 0, 0, 0.2);
     background-color: #28a745;
     transform: scale(1.1);
 }
@@ -434,3 +438,20 @@ select:hover {
     background: #c82333;
     transform: translateY(-1px);
 }
+
+/* ---------------------------------
+   SECTION: Clear Log Button Popup
+   --------------------------------- */
+
+   #clear-log-btn {
+    background-color: #fff;
+    color: rgb(0, 0, 0);
+    font-size: 0.7rem;
+    padding: 8px 15px;
+   }
+   
+    #clear-log-btn:hover {
+     background-color: #8e3f3f;
+     color: #fff;
+    }
+   

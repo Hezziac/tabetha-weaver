@@ -87,11 +87,9 @@ chrome.runtime.onInstalled.addListener(async () => {
 
     if (Object.keys(prefsToSet).length > 0) {
         await chrome.storage.local.set(prefsToSet);
-        console.log("✅ Initialized default preferences:", prefsToSet);
     }
 
     await chrome.storage.local.remove(['pending_image_data', 'pending_rewrite_data', 'pending_writer_data']);
-    console.log("🧹 Cleaned up stale pending data on install");
 });
 
 // --- HANDLE CONTEXT MENU CLICK ---
@@ -385,7 +383,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     console.log("🖼️ Generating alt text");
                 }
 
-                console.log("⏳ Analyzing image for alt text generation...");
 
                 let validTab;
                 try {
@@ -443,8 +440,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (debugMode) {
                     console.log("✅ Image loaded successfully");
                 }
-                
-                console.log("🤖 Processing image with AI...");
                 
                 const base64Data = imageResult.result.dataUrl.split(',')[1];
                 const byteCharacters = atob(base64Data);
@@ -527,7 +522,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 });
 
                 if (debugMode) console.log("✅ Alt text generated");
-                console.log("✅ Alt text generated successfully");
 
                 session.destroy();
 
@@ -687,7 +681,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     console.log(`✏️ [Rewriter]: Starting with tone: ${tone}`);
                 }
 
-                console.log("⏳ Rewriter API loaded. Processing text...");
 
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
                 if (!tab || !tab.id) {
@@ -721,7 +714,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     console.log("✅ [Rewriter]: Completed");
                 }
 
-                console.log("✅ Rewriter text loaded");
 
             } catch (e) {
                 console.error("❌ [Rewriter]: Error:", e.message);
@@ -763,8 +755,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     console.log("✍️ [Writer]: Starting write");
                 }
 
-                console.log("⏳ Writer API loaded. Creating new content...");
-
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
                 if (!tab || !tab.id) {
                     throw new Error('No active tab found.');
@@ -798,8 +788,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (debugMode) {
                     console.log("✅ [Writer]: Completed");
                 }
-                
-                console.log("✅ Writer text loaded");
 
             } catch (e) {
                 console.error("❌ [Writer]: Error:", e.message);

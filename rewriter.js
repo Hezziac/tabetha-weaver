@@ -16,11 +16,11 @@
 export async function executeRewrite(textToRewrite, tone, pageTitle, debug) {
     try {
         if (debug) {
+            console.log("📝 Rewriter API loaded. Processing your text...");
             console.log("🤖 [Rewriter]: Creating rewriter with tone:", tone);
             console.log("📏 [Rewriter]: Input text length:", textToRewrite.length);
         }
 
-        console.log("📝 Rewriter API loaded. Processing your text...");
 
         // Map our tone names to Rewriter API configurations per docs
         const toneConfig = {
@@ -108,8 +108,6 @@ export async function executeRewrite(textToRewrite, tone, pageTitle, debug) {
         }
 
         // --- STEP 4: Perform Rewrite ---
-        console.log("🤖 Tabetha is rewriting your text...");
-        
         const rewrittenText = await rewriter.rewrite(textToRewrite, {
             context: `Rewrite this text from: "${pageTitle || 'Web page content'}"`
         });

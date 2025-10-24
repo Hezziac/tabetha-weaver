@@ -487,13 +487,12 @@ export async function createGroupsFromPreview() {
     // Complete
     const summary = report.map(g => `📌 ${g.name} (${g.tabCount} tabs)`).join('\n');
     const failedSummary = failedGroups.length > 0 
-      ? `\n\n⚠️ Was Already Created/Failed to create ${failedGroups.length} groups`
+      ? `\n\n⚠️\nWas Already Created/Failed to create ${failedGroups.length} groups`
       : '';
 
     if (debugMode) {
       console.log(`🎉 [DEBUG]: SUCCESS! ${report.length} groups created${failedGroups.length > 0 ? `, ${failedGroups.length} failed` : ''}`);
     }
-    console.log(`🎉 Complete! ${report.length} groups created${failedSummary}`);
 
     // Cleanup preview
     await chrome.storage.local.remove('tab_grouping_preview');
@@ -618,9 +617,6 @@ function groupTabsByMainDomain(accessibleTabs, debug) {
 }
 
 /**
- * ✅ FIXED: AI NAMING with user interaction requirement
- */
-/**
  * ✅ FIXED: AI NAMING with fallback names
  */
 async function executeAINaming(domainInfo, debug) {
@@ -628,114 +624,156 @@ async function executeAINaming(domainInfo, debug) {
     if (debug) {
       console.log("🤖 [DEBUG][AI]: Starting naming in page context");
       console.log(`📊 [DEBUG][AI]: ${domainInfo.domains.length} domain groups to name`);
+      console.log(`📋 [DEBUG][AI]: Domains to name: ${domainInfo.domains.join(', ')}`);
     }
 
-    const prompt = `You are Tabetha Weaver, expert at naming browser tab groups.
-
-      Provide creative, meaningful names for these domain-based tab groups:
-
-      ${domainInfo.descriptions}
-
-      INSTRUCTIONS:
-      1. Output ONE group name per line
-      2. Format: DOMAIN|GROUP_NAME
-      3. Replace DOMAIN with the exact domain from above
-      4. Replace GROUP_NAME with a short, meaningful category (max 25 chars)
-      5. Examples: 
-        - github.com|Coding & Dev
-        - youtube.com|Video Content
-        - twitter.com|Social Networks
-        - amazon.com|Shopping
-        - devpost.com|Hackathons & Projects
-      6. Be creative but concise
-      7. Return ONLY the naming output (DOMAIN|GROUP_NAME per line), NO explanations
-
-      Start:
-    `;
-
+    // ✅ Step 1: Check availability
     if (debug) {
-      console.log("📤 [DEBUG][AI]: Checking availability...");
+      console.log("📤 [DEBUG][AI]: Checking model availability...");
     }
 
     const availability = await LanguageModel.availability();
     
     if (debug) {
-      console.log(`🔍 [DEBUG][AI]: Availability: ${availability}`);
+      console.log(`🔍 [DEBUG][AI]: Availability status: ${availability}`);
     }
 
     if (availability === "no") {
+      if (debug) {
+        console.log("❌ [DEBUG][AI]: Model not available on this device");
+      }
       throw new Error("AI model not available on this system.");
     }
 
-    if (availability === "downloading") {
-      if (debug) {
-        console.log("⏳ [DEBUG][AI]: Model downloading, waiting for interaction...");
-      }
-    }
-
+    // ✅ Step 2: Create session with proper options
     if (debug) {
-      console.log("🤖 [DEBUG][AI]: Creating session...");
+      console.log("⏳ [DEBUG][AI]: Creating session...");
     }
 
     const session = await LanguageModel.create({
       monitor(m) {
         m.addEventListener('downloadprogress', (e) => {
-          const percent = Math.round(e.loaded * 100);
+          const percent = Math.round((e.loaded / e.total) * 100);
           if (debug) {
-            console.log(`📥 [DEBUG][AI]: Download: ${percent}%`);
+            console.log(`📥 [DEBUG][AI]: Download progress: ${percent}%`);
           }
         });
       }
     });
 
     if (debug) {
-      console.log("✅ [DEBUG][AI]: Session ready");
-      console.log("🤖 AI naming groups...");
+      console.log("✅ [DEBUG][AI]: Session created successfully");
     }
 
+    // ✅ Step 3: Get model parameters
     const params = await LanguageModel.params();
+    
+    if (debug) {
+      console.log(`🧠 [DEBUG][AI]: Model params - temp: ${params.defaultTemperature}, topK: ${params.defaultTopK}`);
+    }
+
+    // ✅ Step 4: Build the prompt EXACTLY as specified
+    const domainList = domainInfo.domains.join('\n');
+    const domainDescriptions = domainInfo.descriptions;
+
+    const prompt = `You are Tabetha Weaver, an expert at naming browser tab groups.
+
+Your task: Provide creative, meaningful names for these domain-based tab groups.
+
+DOMAINS AND TAB COUNTS:
+${domainDescriptions}
+
+RESPONSE FORMAT (CRITICAL):
+- Output ONE group name per line
+- Format: DOMAIN|GROUP_NAME
+- Replace DOMAIN with exact domain from above
+- Replace GROUP_NAME with short, meaningful category (max 25 chars)
+- NO extra text, NO explanations, NO markdown
+
+EXAMPLES:
+github.com|Coding & Dev
+youtube.com|Video Content
+twitter.com|Social Networks
+amazon.com|Shopping
+devpost.com|Hackathons & Projects
+
+START RESPONSE (format: DOMAIN|GROUP_NAME):`;
+
+    if (debug) {
+      console.log("📝 [DEBUG][AI]: Prompt prepared");
+      console.log(`📄 [DEBUG][AI]: Prompt length: ${prompt.length} chars`);
+    }
+
+    // ✅ Step 5: Send prompt with proper temperature settings
+    if (debug) {
+      console.log("🤖 [DEBUG][AI]: Sending prompt to model...");
+    }
 
     const aiResponse = await session.prompt(prompt, {
-      temperature: Math.min(0.5, params.maxTemperature),
-      topK: Math.min(30, params.maxTopK)
+      temperature: Math.min(0.3, params.maxTemperature),
+      topK: Math.min(20, params.maxTopK)
     });
 
     if (debug) {
-      console.log("📥 [DEBUG][AI]: Raw response received");
-      console.log(`📄 [DEBUG][AI]: Full response:\n${aiResponse}`);
+      console.log("📥 [DEBUG][AI]: Response received from model");
+      console.log(`📄 [DEBUG][AI]: Response (first 500 chars):\n${aiResponse.substring(0, 500)}`);
+      console.log(`📄 [DEBUG][AI]: Full response length: ${aiResponse.length} chars`);
     }
 
-    session.destroy();
-
-    // Parse response
+    // ✅ Step 6: Parse response
     const namedGroups = {};
     const lines = aiResponse.trim().split('\n');
 
     if (debug) {
-      console.log(`📋 [DEBUG][AI]: Processing ${lines.length} response lines`);
+      console.log(`📋 [DEBUG][AI]: Parsing ${lines.length} response lines`);
     }
 
+    let successCount = 0;
     for (const line of lines) {
       const trimmed = String(line || '').trim();
       
-      if (!trimmed || !trimmed.includes('|')) continue;
-
-      const parts = trimmed.split('|');
-      if (parts.length < 2) continue;
-
-      const domainRaw = String(parts[0] || '').trim().toLowerCase();
-      const groupNameRaw = parts.slice(1).join('|').trim();
-
-      if (!domainRaw || !groupNameRaw) continue;
-
-      // Check if domain is in our list
-      if (!domainInfo.domains.includes(domainRaw)) {
+      if (!trimmed) {
         if (debug) {
-          console.log(`⚠️ [DEBUG][AI]: Domain "${domainRaw}" not in request`);
+          console.log("⏭️ [DEBUG][AI]: Skipping empty line");
         }
         continue;
       }
 
+      if (!trimmed.includes('|')) {
+        if (debug) {
+          console.log(`⚠️ [DEBUG][AI]: Line missing '|': "${trimmed.substring(0, 50)}"`);
+        }
+        continue;
+      }
+
+      const parts = trimmed.split('|');
+      if (parts.length < 2) {
+        if (debug) {
+          console.log(`⚠️ [DEBUG][AI]: Invalid format (parts < 2): "${trimmed.substring(0, 50)}"`);
+        }
+        continue;
+      }
+
+      const domainRaw = String(parts[0] || '').trim().toLowerCase();
+      const groupNameRaw = parts.slice(1).join('|').trim();
+
+      if (!domainRaw || !groupNameRaw) {
+        if (debug) {
+          console.log(`⚠️ [DEBUG][AI]: Empty domain or name`);
+        }
+        continue;
+      }
+
+      // ✅ CRITICAL: Check if domain matches exactly
+      if (!domainInfo.domains.includes(domainRaw)) {
+        if (debug) {
+          console.log(`⚠️ [DEBUG][AI]: Domain "${domainRaw}" not in request list`);
+          console.log(`   Available domains: ${domainInfo.domains.join(', ')}`);
+        }
+        continue;
+      }
+
+      // ✅ Clean and validate group name
       const groupName = String(groupNameRaw)
         .replace(/[^a-zA-Z0-9\s&-]/g, '')
         .trim()
@@ -743,42 +781,57 @@ async function executeAINaming(domainInfo, debug) {
 
       if (groupName.length < 2) {
         if (debug) {
-          console.log(`⚠️ [DEBUG][AI]: Group name too short: "${groupName}"`);
+          console.log(`⚠️ [DEBUG][AI]: Group name too short after cleaning: "${groupName}"`);
         }
         continue;
       }
 
       namedGroups[domainRaw] = groupName;
+      successCount++;
 
       if (debug) {
-        console.log(`✅ [DEBUG][AI]: Named "${domainRaw}" as "${groupName}"`);
+        console.log(`✅ [DEBUG][AI]: Parsed - "${domainRaw}" → "${groupName}"`);
       }
     }
 
-    // ✅ NEW: Ensure ALL domains have names (use fallback if AI missed any)
+    if (debug) {
+      console.log(`📊 [DEBUG][AI]: Successfully parsed ${successCount}/${domainInfo.domains.length} domains`);
+    }
+
+    // ✅ Step 7: Ensure ALL domains have names (use fallback if needed)
     for (const domain of domainInfo.domains) {
       if (!namedGroups[domain]) {
-        namedGroups[domain] = createBasicGroupName(domain);
+        const fallbackName = createBasicGroupName(domain);
+        namedGroups[domain] = fallbackName;
         if (debug) {
-          console.log(`🔄 [DEBUG][AI]: Using fallback for "${domain}": "${namedGroups[domain]}"`);
+          console.log(`🔄 [DEBUG][AI]: Fallback for "${domain}": "${fallbackName}"`);
         }
       }
     }
 
     if (debug) {
-      console.log(`✅ [DEBUG][AI]: ${Object.keys(namedGroups).length} groups named (with fallbacks)`);
+      console.log(`✅ [DEBUG][AI]: Final result - ${Object.keys(namedGroups).length} groups named`);
+      console.log(`📋 [DEBUG][AI]: Named groups:`, namedGroups);
     }
 
-    return { namedGroups, error: null };
+    // ✅ Step 8: Cleanup
+    session.destroy();
+
+    return { 
+      namedGroups, 
+      error: null,
+      aiGenerated: successCount > 0
+    };
 
   } catch (e) {
-    console.error("❌ [AI Naming]:", e.message);
+    console.error("❌ [AI Naming] Error:", e.message);
     
     if (debug) {
-      console.error("❌ [DEBUG][AI]:", e);
+      console.error("❌ [DEBUG][AI]: Full error:", e);
+      console.error("❌ [DEBUG][AI]: Stack:", e.stack);
     }
 
-    // ✅ NEW: Return ALL domains with fallback names on error
+    // ✅ Return fallback names on error
     const fallbackGroups = {};
     for (const domain of domainInfo.domains) {
       fallbackGroups[domain] = createBasicGroupName(domain);
@@ -786,7 +839,8 @@ async function executeAINaming(domainInfo, debug) {
 
     return {
       namedGroups: fallbackGroups,
-      error: null, // ✅ Don't error - use fallbacks instead
+      error: e.message,
+      aiGenerated: false,
       usingFallback: true
     };
   }

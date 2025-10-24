@@ -16,12 +16,11 @@
 export async function executeWrite(writingTask, referenceText, pageTitle, debug) {
     try {
         if (debug) {
-            console.log("🤖 [Writer]: Starting write task");
+            console.log("📝 Writer API loaded. Creating your content...");
             console.log("📝 [Writer]: Task:", writingTask);
             console.log("📄 [Writer]: Reference text length:", referenceText?.length || 0);
         }
 
-        console.log("📝 Writer API loaded. Creating your content...");
 
         // --- STEP 1: Check API Availability ---
         const availability = await Writer.availability();
@@ -61,7 +60,6 @@ export async function executeWrite(writingTask, referenceText, pageTitle, debug)
             monitor(m) {
                 m.addEventListener('downloadprogress', (e) => {
                     const percent = Math.round(e.loaded * 100);
-                    console.log(`📥 Loading Writer Model: ${percent}%`);
                     if (debug) {
                         console.log(`📊 [Writer]: Download progress - ${percent}%`);
                     }
@@ -88,8 +86,6 @@ export async function executeWrite(writingTask, referenceText, pageTitle, debug)
         }
 
         // --- STEP 5: Generate Content ---
-        console.log("🤖 Tabetha is writing your content...");
-        
         const writtenText = await writer.write(writingTask);
 
         // --- STEP 6: Cleanup ---
