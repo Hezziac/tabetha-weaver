@@ -9,7 +9,6 @@ let activeGroupingController = null;
  */
 export async function groupTabs() {
   let debugMode = false;
-  
   try {
     try {
       const stored = await chrome.storage.local.get('debugMode');
@@ -17,12 +16,12 @@ export async function groupTabs() {
     } catch (e) {
       debugMode = false;
     }
-    
+
     if (debugMode) {
       console.log("🧠 [DEBUG][Tab Grouping]: Starting...");
     }
     console.log("✅ Tab Grouping API loaded");
-    
+
     if (activeGroupingController) {
       if (debugMode) {
         console.log("🔄 [DEBUG]: Aborting previous request...");
@@ -31,20 +30,20 @@ export async function groupTabs() {
       activeGroupingController.abort();
       activeGroupingController = null;
     }
-    
+
     activeGroupingController = new AbortController();
     const currentSignal = activeGroupingController.signal;
-    
+
     // Get current window
     const windows = await chrome.windows.getAll({ windowTypes: ['normal'] });
     const currentWindow = windows.find(w => w.focused) || windows[0];
-    
+
     if (!currentWindow) {
       throw new Error("No browser window found.");
     }
 
     const currentWindowId = currentWindow.id;
-    
+
     if (debugMode) {
       console.log(`🪟 [DEBUG]: Window ID: ${currentWindowId}`);
     }
@@ -160,7 +159,7 @@ export async function groupTabs() {
     }
     console.log(`📋 Creating ${Object.keys(namedGroups).length} groups...`);
 
-    // Update status: GROUPING (popup sees this and closes)
+    // Update status: GROUPING
     await chrome.storage.local.set({
       tab_grouping_status: {
         status: 'grouping',
@@ -170,14 +169,15 @@ export async function groupTabs() {
       }
     });
 
-    // WAIT FOR POPUP TO CLOSE
-    await new Promise(r => setTimeout(r, 500));
+    // ✅ FIX: Don't wait for popup to close - keep going
+    // Remove the 500ms delay entirely
 
     // ========== STEP 3: CREATE TAB GROUPS ==========
     const colors = ["blue", "red", "green", "yellow", "pink", "purple", "cyan"];
     let colorIndex = 0;
     const report = [];
     const alreadyGroupedIds = new Set();
+    const failedGroups = [];
 
     // Track existing groups - SKIP these tabs
     for (const tab of tabs) {
@@ -193,54 +193,106 @@ export async function groupTabs() {
       console.log(`ℹ️ [DEBUG]: ${alreadyGroupedIds.size} tabs already in groups (skipping)`);
     }
 
+    // ✅ FIX: Process groups with BETTER error handling
     for (const [groupName, tabIds] of Object.entries(namedGroups)) {
       if (currentSignal.aborted) throw new Error("Cancelled");
 
-      // Filter out already grouped tabs
-      const ungroupedTabIds = tabIds.filter(id => !alreadyGroupedIds.has(id));
-
-      if (ungroupedTabIds.length < 2) {
-        if (debugMode) {
-          console.log(`⚠️ [DEBUG]: Skipping "${groupName}" - only ${ungroupedTabIds.length} ungrouped tabs`);
-        }
-        continue;
-      }
-
       try {
-        // Validate tabs exist and are in this window
+        // Filter out already grouped tabs
+        let ungroupedTabIds = tabIds.filter(id => !alreadyGroupedIds.has(id));
+
+        if (ungroupedTabIds.length < 2) {
+          if (debugMode) {
+            console.log(`⚠️ [DEBUG]: Skipping "${groupName}" - only ${ungroupedTabIds.length} ungrouped tabs`);
+          }
+          continue;
+        }
+
+        // ✅ FIX: Re-validate tabs RIGHT BEFORE grouping
         const validTabIds = [];
         for (const id of ungroupedTabIds) {
           try {
             const tab = await chrome.tabs.get(id);
-            if (tab.windowId === currentWindowId && !tab.pinned && tab.status === 'complete' && 
-                !tab.discarded && !alreadyGroupedIds.has(id)) {
-              validTabIds.push(id);
+            
+            // ✅ STRICT validation
+            if (tab.windowId !== currentWindowId) {
+              if (debugMode) console.warn(`⚠️ [DEBUG]: Tab ${id} moved to different window`);
+              continue;
             }
+            if (tab.pinned) {
+              if (debugMode) console.warn(`⚠️ [DEBUG]: Tab ${id} is pinned`);
+              continue;
+            }
+            if (tab.discarded) {
+              if (debugMode) console.warn(`⚠️ [DEBUG]: Tab ${id} discarded`);
+              continue;
+            }
+            if (tab.status !== 'complete') {
+              if (debugMode) console.warn(`⚠️ [DEBUG]: Tab ${id} not complete (status: ${tab.status})`);
+              continue;
+            }
+            if (tab.groupId && tab.groupId > 0) {
+              if (debugMode) console.warn(`⚠️ [DEBUG]: Tab ${id} already grouped`);
+              alreadyGroupedIds.add(id);
+              continue;
+            }
+            
+            validTabIds.push(id);
           } catch (err) {
             if (debugMode) {
               console.warn(`⚠️ [DEBUG]: Tab ${id} invalid: ${err.message}`);
             }
+            // Tab was likely closed - skip it
           }
         }
 
         if (validTabIds.length < 2) {
           if (debugMode) {
-            console.warn(`⚠️ [DEBUG]: "${groupName}" - not enough valid ungrouped tabs`);
+            console.warn(`⚠️ [DEBUG]: "${groupName}" - not enough valid ungrouped tabs after re-validation`);
           }
+          failedGroups.push({ name: groupName, reason: 'insufficient_valid_tabs' });
           continue;
         }
 
-        // Create group
-        const groupId = await chrome.tabs.group({ tabIds: validTabIds });
-        await chrome.tabGroups.update(groupId, {
-          title: String(groupName || 'Group').substring(0, 50),
-          color: colors[colorIndex % colors.length]
-        });
+        // ✅ FIX: Create group with retry logic
+        let groupId;
+        try {
+          groupId = await chrome.tabs.group({ tabIds: validTabIds });
+        } catch (err) {
+          if (debugMode) {
+            console.error(`❌ [DEBUG]: Failed to create group for "${groupName}": ${err.message}`);
+          }
+          // Retry once after 100ms
+          await new Promise(r => setTimeout(r, 100));
+          try {
+            groupId = await chrome.tabs.group({ tabIds: validTabIds });
+          } catch (retryErr) {
+            if (debugMode) {
+              console.error(`❌ [DEBUG]: Retry failed for "${groupName}": ${retryErr.message}`);
+            }
+            failedGroups.push({ name: groupName, reason: retryErr.message });
+            continue;
+          }
+        }
+
+        // ✅ Update group properties
+        try {
+          await chrome.tabGroups.update(groupId, {
+            title: String(groupName || 'Group').substring(0, 50),
+            color: colors[colorIndex % colors.length]
+          });
+        } catch (err) {
+          if (debugMode) {
+            console.warn(`⚠️ [DEBUG]: Could not update group properties: ${err.message}`);
+          }
+          // Continue anyway - group was created
+        }
 
         report.push({
           name: groupName,
           tabCount: validTabIds.length,
-          tabIds: validTabIds
+          tabIds: validTabIds,
+          groupId: groupId
         });
 
         colorIndex++;
@@ -250,34 +302,40 @@ export async function groupTabs() {
         }
         console.log(`✅ Created: "${groupName}" (${validTabIds.length} tabs)`);
 
-        await new Promise(r => setTimeout(r, 50));
+        // ✅ Shorter delay between groups
+        await new Promise(r => setTimeout(r, 25));
 
       } catch (err) {
         if (debugMode) {
-          console.error(`❌ [DEBUG]: Failed "${groupName}": ${err.message}`);
+          console.error(`❌ [DEBUG]: Outer error for "${groupName}": ${err.message}`);
         }
-        console.error(`❌ Failed "${groupName}": ${err.message}`);
+        failedGroups.push({ name: groupName, reason: err.message });
+        // ✅ Continue to next group instead of breaking
       }
     }
 
     if (report.length === 0) {
-      throw new Error("No groups created.");
+      throw new Error("No groups were successfully created.");
     }
 
     // Complete
     const summary = report.map(g => `📌 ${g.name} (${g.tabCount} tabs)`).join('\n');
-    
+    const failedSummary = failedGroups.length > 0 
+      ? `\n\n⚠️ Failed to create ${failedGroups.length} groups`
+      : '';
+
     if (debugMode) {
-      console.log(`🎉 [DEBUG]: SUCCESS! ${report.length} groups created`);
+      console.log(`🎉 [DEBUG]: SUCCESS! ${report.length} groups created${failedGroups.length > 0 ? `, ${failedGroups.length} failed` : ''}`);
     }
-    console.log(`🎉 Complete! ${report.length} groups created`);
+    console.log(`🎉 Complete! ${report.length} groups created${failedSummary}`);
 
     // Store result as JSON
     await chrome.storage.local.set({
       tab_grouping_status: {
         status: 'complete',
-        message: `🎉 Created ${report.length} groups:\n\n${summary}`,
+        message: `🎉 Created ${report.length} groups:\n\n${summary}${failedSummary}`,
         groupCount: report.length,
+        failedCount: failedGroups.length,
         groupDetails: report.map(g => ({
           name: g.name,
           tabCount: g.tabCount
@@ -290,17 +348,17 @@ export async function groupTabs() {
 
     return {
       status: "success",
-      message: `🎉 Created ${report.length} groups:\n\n${summary}`,
-      details: report
+      message: `🎉 Created ${report.length} groups:\n\n${summary}${failedSummary}`,
+      details: report,
+      failedGroups: failedGroups
     };
-
   } catch (e) {
     console.error("❌ [Tab Grouping]:", e.message);
-    
+
     if (debugMode) {
       console.error("❌ [DEBUG]:", e);
     }
-    
+
     await chrome.storage.local.set({
       tab_grouping_status: {
         status: 'error',
@@ -308,9 +366,9 @@ export async function groupTabs() {
         timestamp: Date.now()
       }
     });
-    
+
     activeGroupingController = null;
-    
+
     return {
       status: "error",
       message: e.message || 'Tab grouping failed'

@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Tabetha Weaver",
     "version": "1.0.0",
-    "description": "Your browser's AI assistant for tabs, writing, and content",
+    "description": "Your browser's AI assistant for tabs, writing, alt images and content",
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
