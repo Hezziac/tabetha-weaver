@@ -313,3 +313,124 @@ select:hover {
     background-color: #28a745;
     transform: scale(1.1);
 }
+
+/* ---------------------------------
+   SECTION: Group Tabs Button Popup
+   --------------------------------- */
+
+ /* GROUP PREVIEW SECTION */
+#group-preview-section {
+    margin: 15px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f9f9f9;
+}
+
+.group-preview-header {
+    margin-bottom: 12px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+}
+
+.group-preview-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+#group-count-label {
+    text-align: center;
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.group-preview-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 12px 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.group-preview-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.group-preview-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.group-preview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.group-domain {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    word-break: break-word;
+}
+
+.group-count {
+    font-size: 12px;
+    color: #999;
+    background: #f0f0f0;
+    padding: 3px 6px;
+    border-radius: 3px;
+    text-align: center;
+}
+
+/* GROUP PREVIEW ACTIONS */
+.group-preview-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 12px;
+}
+
+.btn-confirm,
+.btn-cancel {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm {
+    background: #28a745;
+    color: white;
+}
+
+.btn-confirm:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.btn-cancel {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}

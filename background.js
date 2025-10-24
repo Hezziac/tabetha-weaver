@@ -1,6 +1,6 @@
 // background.js
 
-import { groupTabs } from './tabs.js';
+import { groupTabs, createGroupsFromPreview } from './tabs.js';
 import { chatWithTabetha } from './chatWithTabetha.js';
 import { executeRewrite } from './rewriter.js';
 import { executeWrite } from './writer.js';
@@ -808,6 +808,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     pending_writer_data: {
                         error: e.message || 'Failed to write',
                         failedAt: Date.now()
+                    }
+                });
+            }
+        })();
+        return true;
+    } else if (request.action === "create_groups_confirmed") {
+        (async () => {
+            try {
+                const { debugMode } = await chrome.storage.local.get('debugMode');
+                
+                if (debugMode) {
+                    console.log("📤 [DEBUG][Background]: create_groups_confirmed received");
+                }
+
+                const response = await createGroupsFromPreview();
+                
+                if (debugMode) {
+                    console.log(`✅ [DEBUG][Background]: Groups created - status: ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.error("❌ [Background]: Error:", error.message);
+                
+                const { debugMode } = await chrome.storage.local.get('debugMode');
+                if (debugMode) {
+                    console.error("❌ [DEBUG][Background]:", error);
+                }
+                
+                await chrome.storage.local.set({
+                    tab_grouping_status: {
+                        status: 'error',
+                        message: error.message || 'Unknown error',
+                        timestamp: Date.now()
                     }
                 });
             }

@@ -19,19 +19,29 @@
     <div class="main-content">
         <p id="output">Hi there! I'm Tabetha. How can I help you today?</p>
         
-        <!-- GROUP PREVIEW SECTION (Hidden by default) -->
-        <div id="group-preview-section" style="display:none;">
-            <div class="group-preview-header">
-                <h3>🎨 AI Group Suggestions</h3>
-                <p id="group-count-label">Loading suggestions...</p>
-            </div>
-            <div id="group-preview-list" class="group-preview-list"></div>
-            <div class="group-preview-actions">
-                <button id="confirm-groups-btn" class="btn-confirm">✅ Confirm & Create</button>
-                <button id="retry-groups-btn" class="btn-retry">🔄 Regenerate</button>
-                <button id="cancel-groups-btn" class="btn-cancel">❌ Cancel</button>
-            </div>
-        </div>
+<!-- ✅ TAB GROUPING PREVIEW SECTION -->
+<div id="group-preview-section" style="display: none; margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+    
+    <!-- Count Label -->
+    <div id="group-count-label" style="font-weight: bold; margin-bottom: 12px; font-size: 14px;">
+        📊 Groups Ready
+    </div>
+    
+    <!-- Groups List -->
+    <div id="group-preview-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px; background: white; border-radius: 6px; padding: 10px;">
+        <!-- Groups will be added here dynamically -->
+    </div>
+    
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 10px; margin-top: 12px;">
+        <button id="confirm-groups-btn" class="action-button" style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+            ✅ Create Groups
+        </button>
+        <button id="cancel-groups-btn" class="action-button" style="flex: 1; padding: 10px; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+            ❌ Cancel
+        </button>
+    </div>
+</div>
         
         <button id="generate-alt-btn" style="display:none;">🖼️ Generate Alt Text</button>
         <button id="rewrite-text-btn" style="display:none;">✏️ Rewrite Text</button>

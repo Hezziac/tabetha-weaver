@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     groupTabsBtn.addEventListener('click', async () => {
         try {
             groupTabsBtn.disabled = true;
-            groupTabsBtn.textContent = '⏳ Starting...';
+            groupTabsBtn.textContent = '⏳ Analyzing...';
 
             const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
             
@@ -675,44 +675,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             outputDiv.innerText = '🧠 Analyzing tabs...';
-            appendToLog(`⏳ [Tab Grouping]: Starting for window ${currentTab.windowId}...`, true);
-            
-            // Animate dots
-            let dotCount = 0;
-            const dotInterval = setInterval(() => {
-                dotCount = (dotCount % 3) + 1;
-                outputDiv.innerText = `🤖 AI is analyzing${'.'.repeat(dotCount)}`;
-            }, 500);
+            appendToLog(`⏳ [Tab Grouping]: Starting...`, true);
 
             // Send request to background
             chrome.runtime.sendMessage({ 
                 action: "group_tabs"
             });
 
-            // Wait for grouping to start
+            // Wait for preview
             const checkInterval = setInterval(async () => {
-                const { tab_grouping_status } = await chrome.storage.local.get('tab_grouping_status');
+                const { tab_grouping_status, tab_grouping_preview } = await chrome.storage.local.get(['tab_grouping_status', 'tab_grouping_preview']);
                 
                 if (!tab_grouping_status) return;
 
-                // When grouping starts, close popup
-                if (tab_grouping_status.status === 'grouping') {
-                    clearInterval(dotInterval);
+                if (tab_grouping_status.status === 'preview' && tab_grouping_preview) {
                     clearInterval(checkInterval);
-
-                    outputDiv.innerText = '🎨 Creating groups...';
-                    appendToLog('🎨 [Tab Grouping]: Popup closing, grouping in background...', true);
-                    
-                    // CLOSE POPUP NOW
-                    setTimeout(() => {
-                        window.close();
-                    }, 200);
+                    showGroupPreview(tab_grouping_preview.groups);
+                    groupTabsBtn.disabled = false;
+                    groupTabsBtn.textContent = '📂 Group All Tabs';
+                    appendToLog(`📊 [Tab Grouping]: Preview ready - ${Object.keys(tab_grouping_preview.groups).length} groups`, true);
                     return;
                 }
 
-                // Handle error/complete
                 if (tab_grouping_status.status === 'complete' || tab_grouping_status.status === 'error') {
-                    clearInterval(dotInterval);
                     clearInterval(checkInterval);
                     groupTabsBtn.disabled = false;
                     groupTabsBtn.textContent = '📂 Group All Tabs';
@@ -725,7 +710,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         appendToLog(`❌ [Tab Grouping]: ${tab_grouping_status.message}`);
                     }
 
-                    // Cleanup
                     setTimeout(async () => {
                         await chrome.storage.local.remove('tab_grouping_status');
                     }, 3000);
@@ -734,7 +718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Timeout fallback
             setTimeout(() => {
-                clearInterval(dotInterval);
+                clearInterval(checkInterval);
                 groupTabsBtn.disabled = false;
                 groupTabsBtn.textContent = '📂 Group All Tabs';
             }, 60000);
@@ -747,6 +731,155 @@ document.addEventListener('DOMContentLoaded', async () => {
             groupTabsBtn.textContent = '📂 Group All Tabs';
         }
     });
+
+    // ✅ Confirm and create groups
+    async function confirmAndCreateGroups() {
+        document.getElementById('group-preview-section').style.display = 'none';
+        outputDiv.innerText = '🎨 Creating your groups...';
+        appendToLog('✅ User confirmed - creating groups...', true);
+
+        chrome.runtime.sendMessage({ 
+            action: "create_groups_confirmed"
+        });
+    }
+
+    // ✅ Cancel grouping
+    async function cancelGrouping() {
+        await chrome.storage.local.remove(['tab_grouping_preview', 'tab_grouping_status']);
+        document.getElementById('group-preview-section').style.display = 'none';
+        outputDiv.innerText = '👋 Grouping cancelled';
+        appendToLog('🛑 User cancelled grouping', true);
+        
+        setTimeout(() => {
+            outputDiv.innerText = '👋 Hi there! I\'m Tabetha. How can I help you today?';
+        }, 2000);
+    }
+
+    function showGroupPreview(groups) {
+        const previewSection = document.getElementById('group-preview-section');
+        const groupList = document.getElementById('group-preview-list');
+        const countLabel = document.getElementById('group-count-label');
+
+        // ✅ FIX: Check if groupList exists first
+        if (!groupList) {
+            console.error("❌ group-preview-list element not found in DOM");
+            outputDiv.innerText = "❌ Error: Preview element not found";
+            return;
+        }
+
+        // ✅ SAFELY clear the list
+        while (groupList.firstChild) {
+            groupList.removeChild(groupList.firstChild);
+        }
+
+        let totalTabs = 0;
+        const groupArray = Object.entries(groups);
+        
+        for (const [domain, data] of groupArray) {
+            totalTabs += data.count;
+            
+            // ✅ Create item using createElement (safe, no innerHTML)
+            const item = document.createElement('div');
+            item.className = 'group-preview-item';
+            
+            // Create content container
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'group-preview-content';
+            
+            // Create domain name element
+            const domainDiv = document.createElement('div');
+            domainDiv.className = 'group-domain';
+            domainDiv.innerText = `🌐 ${domain}`;
+            
+            // Create count element
+            const countDiv = document.createElement('div');
+            countDiv.className = 'group-count';
+            const tabWord = data.count !== 1 ? 'tabs' : 'tab';
+            countDiv.innerText = `${data.count} ${tabWord}`;
+            
+            // Append to content
+            contentDiv.appendChild(domainDiv);
+            contentDiv.appendChild(countDiv);
+            
+            // Append to item
+            item.appendChild(contentDiv);
+            
+            // Add to list
+            groupList.appendChild(item);
+        }
+
+        // ✅ Update summary using innerText
+        if (countLabel) {
+            countLabel.innerText = `📊 ${Object.keys(groups).length} groups • ${totalTabs} tabs`;
+        }
+        
+        previewSection.style.display = 'block';
+        outputDiv.innerText = '🎨 Ready to organize your tabs?';
+
+        // ✅ Set up ONLY Cancel and Group buttons (NO regenerate)
+        const confirmBtn = document.getElementById('confirm-groups-btn');
+        const cancelBtn = document.getElementById('cancel-groups-btn');
+        
+        if (confirmBtn) {
+            confirmBtn.onclick = confirmAndCreateGroups;
+        }
+        if (cancelBtn) {
+            cancelBtn.onclick = cancelGrouping;
+        }
+}
+
+// ✅ Confirm and create groups
+async function confirmAndCreateGroups() {
+    const previewSection = document.getElementById('group-preview-section');
+    if (previewSection) {
+        previewSection.style.display = 'none';
+    }
+    outputDiv.innerText = '🎨 Creating your groups...';
+    appendToLog('✅ User confirmed - creating groups...', true);
+
+    chrome.runtime.sendMessage({ 
+        action: "create_groups_confirmed"
+    });
+}
+
+// ✅ Cancel grouping
+async function cancelGrouping() {
+    await chrome.storage.local.remove(['tab_grouping_preview', 'tab_grouping_status']);
+    const previewSection = document.getElementById('group-preview-section');
+    if (previewSection) {
+        previewSection.style.display = 'none';
+    }
+    outputDiv.innerText = '👋 Grouping cancelled';
+    appendToLog('🛑 User cancelled grouping', true);
+    
+    setTimeout(() => {
+        outputDiv.innerText = '👋 Hi there! I\'m Tabetha. How can I help you today?';
+    }, 2000);
+}
+
+    // ✅ NEW: Confirm and create groups
+    async function confirmAndCreateGroups() {
+        document.getElementById('group-preview-section').style.display = 'none';
+        outputDiv.innerText = '🎨 Creating your groups...';
+        appendToLog('✅ User confirmed - creating groups...', true);
+
+        chrome.runtime.sendMessage({ 
+            action: "create_groups_confirmed"
+        });
+    }
+
+    // ✅ NEW: Cancel grouping
+    async function cancelGrouping() {
+        await chrome.storage.local.remove(['tab_grouping_preview', 'tab_grouping_status']);
+        document.getElementById('group-preview-section').style.display = 'none';
+        outputDiv.innerText = '👋 Grouping cancelled';
+        appendToLog('🛑 User cancelled grouping', true);
+        
+        setTimeout(() => {
+            outputDiv.innerText = '👋 Hi there! I\'m Tabetha. How can I help you today?';
+        }, 2000);
+    }
+
 
     // Listen for Storage Changes
     chrome.storage.onChanged.addListener((changes, namespace) => {

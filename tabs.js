@@ -1,5 +1,5 @@
 // ============================================================================
-// TABS.JS - URL-BASED GROUPING WITH AI NAMING
+// TABS.JS - URL-BASED GROUPING WITH AI NAMING (FIXED)
 // ============================================================================
 
 let activeGroupingController = null;
@@ -34,18 +34,16 @@ export async function groupTabs() {
     activeGroupingController = new AbortController();
     const currentSignal = activeGroupingController.signal;
 
-    // Get current window
-    const windows = await chrome.windows.getAll({ windowTypes: ['normal'] });
-    const currentWindow = windows.find(w => w.focused) || windows[0];
-
-    if (!currentWindow) {
-      throw new Error("No browser window found.");
+    // ✅ KEY FIX: Get window ID from active tab, not from window list
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!activeTab || !activeTab.windowId) {
+      throw new Error("No active tab found. Cannot determine window.");
     }
 
-    const currentWindowId = currentWindow.id;
+    const currentWindowId = activeTab.windowId;
 
     if (debugMode) {
-      console.log(`🪟 [DEBUG]: Window ID: ${currentWindowId}`);
+      console.log(`🪟 [DEBUG]: Window ID from active tab: ${currentWindowId}`);
     }
 
     // Update status: ANALYZING
@@ -57,38 +55,59 @@ export async function groupTabs() {
       }
     });
 
-    // Get ungrouped tabs
-    const tabs = await chrome.tabs.query({ 
-      windowId: currentWindowId,
-      pinned: false 
-    });
+    // ✅ Query ALL tabs, then filter by the ACTIVE tab's window
+    const allTabs = await chrome.tabs.query({});
+    const tabs = allTabs.filter(tab => tab.windowId === currentWindowId && !tab.pinned);
 
     if (debugMode) {
-      console.log(`📊 [DEBUG]: Found ${tabs.length} total tabs`);
+      console.log(`📊 [DEBUG]: Found ${tabs.length} total tabs in window ${currentWindowId}`);
+      // DEEP DEBUG: List all tabs
+      // tabs.forEach((t, i) => {
+      //   console.log(`  ${i + 1}. Tab ${t.id}: ${t.url?.substring(0, 60) || 'no-url'}... (Status: ${t.status}, Pinned: ${t.pinned})`);
+      // });
     }
 
     if (currentSignal.aborted) throw new Error("Cancelled");
 
-    // Filter accessible tabs ONLY
+    // Filter accessible tabs
     const accessibleTabs = tabs.filter(tab => {
+      // Must have URL
       if (!tab.url || typeof tab.url !== 'string') return false;
+      
+      // Must be HTTP/HTTPS (exclude chrome://, about:, etc.)
       if (!tab.url.startsWith('http://') && !tab.url.startsWith('https://')) return false;
+      
+      // Exclude system URLs
       if (tab.url.startsWith('chrome-extension://') || tab.url.startsWith('chrome://') || 
-          tab.url.startsWith('about:') || tab.url.startsWith('edge://') || tab.url.startsWith('file://')) return false;
-      if (tab.discarded || tab.status !== 'complete') return false;
+          tab.url.startsWith('about:') || tab.url.startsWith('edge://') || tab.url.startsWith('file://')) {
+        return false;
+      }
+      
+      // Skip discarded tabs
+      if (tab.discarded) return false;
+      
+      // Accept 'complete' or 'loading'
+      if (tab.status !== 'complete' && tab.status !== 'loading') return false;
+      
+      // Verify window ID (double-check)
       if (tab.windowId !== currentWindowId) return false;
+      
       return true;
     });
 
     if (debugMode) {
-      console.log(`✅ [DEBUG]: ${accessibleTabs.length} accessible tabs`);
+      console.log(`✅ [DEBUG]: ${accessibleTabs.length} accessible tabs found`);
+      // DEEP DEBUG: List accessible tabs
+      // accessibleTabs.forEach((t, idx) => {
+      //   console.log(`  📄 Tab ${t.id}: ${t.url?.substring(0, 70) || 'untitled'}... (Status: ${t.status})`);
+      // });
     }
 
     if (accessibleTabs.length < 2) {
-      throw new Error("Need at least 2 accessible tabs.");
+      throw new Error("Need at least 2 accessible tabs to create groups.");
     }
 
-    // ========== STEP 1: GROUP BY URL DOMAIN ==========
+    // ========== GROUP BY DOMAIN ==========
     if (debugMode) {
       console.log("🔗 [DEBUG]: Starting URL-based grouping...");
     }
@@ -97,23 +116,175 @@ export async function groupTabs() {
 
     if (debugMode) {
       console.log(`📋 [DEBUG]: Created ${Object.keys(urlGroups).length} domain groups`);
-      Object.entries(urlGroups).forEach(([domain, tabList]) => {
-        console.log(`  🌐 ${domain}: ${tabList.length} tabs`);
+      Object.entries(urlGroups).forEach(([domain, tabIds]) => {
+        console.log(`  🌐 ${domain}: ${tabIds.length} tabs`);
       });
     }
 
     if (currentSignal.aborted) throw new Error("Cancelled");
 
-    // ========== STEP 2: ASK AI TO NAME GROUPS ==========
-    if (debugMode) {
-      console.log("📤 [DEBUG]: Sending domain groups to AI for naming...");
-      console.log("📤 Asking AI for group names...");
+    if (Object.keys(urlGroups).length === 0) {
+      throw new Error("No groupable tabs found. Need at least 2 tabs from the same domain.");
     }
 
-    // Get a tab to run AI in
-    const targetTab = accessibleTabs[0];
-    if (!targetTab || !targetTab.id) {
-      throw new Error("No valid tab found.");
+    // ========== STORE PREVIEW ==========
+    const previewData = {};
+    for (const [domain, tabIds] of Object.entries(urlGroups)) {
+      const tabObjects = accessibleTabs.filter(t => tabIds.includes(t.id));
+      previewData[domain] = {
+        tabIds: tabIds,
+        urls: tabObjects.map(t => t.url),
+        count: tabIds.length
+      };
+    }
+
+    await chrome.storage.local.set({
+      tab_grouping_preview: {
+        groups: previewData,
+        windowId: currentWindowId,
+        timestamp: Date.now()
+      }
+    });
+
+    // Signal popup to show preview
+    await chrome.storage.local.set({
+      tab_grouping_status: {
+        status: 'preview',
+        message: '🎨 Ready to group tabs - confirm below',
+        groupCount: Object.keys(urlGroups).length,
+        timestamp: Date.now()
+      }
+    });
+
+    if (debugMode) {
+      console.log(`📊 [DEBUG]: Preview stored with ${Object.keys(urlGroups).length} groups`);
+    }
+
+    activeGroupingController = null;
+
+    return {
+      status: "preview",
+      message: `Found ${Object.keys(urlGroups).length} groups ready to create`,
+      groupCount: Object.keys(urlGroups).length
+    };
+
+  } catch (e) {
+    console.error("❌ [Tab Grouping]:", e.message);
+
+    if (debugMode) {
+      console.error("❌ [DEBUG]:", e);
+    }
+
+    await chrome.storage.local.set({
+      tab_grouping_status: {
+        status: 'error',
+        message: e.message || 'Tab grouping failed',
+        timestamp: Date.now()
+      }
+    });
+
+    activeGroupingController = null;
+
+    return {
+      status: "error",
+      message: e.message || 'Tab grouping failed'
+    };
+  }
+}
+
+/**
+ * ✅ USE OLD GROUPING LOGIC - SIMPLE & RELIABLE
+ */
+function groupTabsByDomain(accessibleTabs, debug) {
+  const domainMap = {};
+  const minGroupSize = 2;
+
+  for (const tab of accessibleTabs) {
+    if (!tab.url) continue;
+
+    try {
+      const urlObj = new URL(tab.url);
+      const domain = urlObj.hostname || 'unknown';
+
+      if (!domainMap[domain]) {
+        domainMap[domain] = [];
+      }
+      domainMap[domain].push(tab.id);
+    } catch (err) {
+      if (debug) {
+        console.warn(`⚠️ [DEBUG]: Could not parse URL: ${tab.url}`);
+      }
+    }
+  }
+
+  // Filter groups with fewer than minGroupSize tabs
+  const result = {};
+  for (const [domain, tabIds] of Object.entries(domainMap)) {
+    if (tabIds.length >= minGroupSize) {
+      result[domain] = tabIds;
+      if (debug) {
+        console.log(`✅ [DEBUG]: Domain group "${domain}": ${tabIds.length} tabs`);
+      }
+    } else {
+      if (debug) {
+        console.log(`⚠️ [DEBUG]: Excluding domain "${domain}": only ${tabIds.length} tab(s)`);
+      }
+    }
+  }
+
+  if (debug) {
+    console.log(`📊 [DEBUG]: Final domain groups: ${Object.keys(result).length}`);
+  }
+
+  return result;
+}
+
+/**
+ * ✅ NEW: CREATE GROUPS AFTER USER CONFIRMS
+ */
+export async function createGroupsFromPreview() {
+  let debugMode = false;
+  try {
+    try {
+      const stored = await chrome.storage.local.get('debugMode');
+      debugMode = !!stored.debugMode;
+    } catch (e) {
+      debugMode = false;
+    }
+
+    if (debugMode) {
+      console.log("🎨 [DEBUG]: Creating groups from preview...");
+    }
+
+    const previewData = await chrome.storage.local.get('tab_grouping_preview');
+    if (!previewData.tab_grouping_preview) {
+      throw new Error("No preview data found");
+    }
+
+    const { groups, windowId } = previewData.tab_grouping_preview;
+    const currentSignal = activeGroupingController?.signal;
+
+    // ========== STEP 3: ASK AI TO NAME GROUPS ==========
+    if (debugMode) {
+      console.log("📤 [DEBUG]: Asking AI for creative group names...");
+    }
+
+    const domainList = Object.keys(groups);
+    const domainDescriptions = domainList
+      .map(domain => `${domain} (${groups[domain].count} tabs)`)
+      .join('\n');
+
+    // Get a tab to run AI in - use first available tab from ANY domain
+    let targetTab = null;
+    for (const domain of domainList) {
+      if (groups[domain].tabIds.length > 0) {
+        targetTab = await chrome.tabs.get(groups[domain].tabIds[0]).catch(() => null);
+        if (targetTab) break;
+      }
+    }
+
+    if (!targetTab) {
+      throw new Error("No valid tab found for AI execution");
     }
 
     let aiResult;
@@ -121,37 +292,44 @@ export async function groupTabs() {
       const [result] = await chrome.scripting.executeScript({
         target: { tabId: targetTab.id },
         func: executeAINaming,
-        args: [urlGroups, debugMode]
+        args: [{ domains: domainList, descriptions: domainDescriptions }, debugMode]
       });
 
       aiResult = result.result;
+      
+      if (debugMode && aiResult.usingFallback) {
+        console.log("🔄 [DEBUG]: AI naming used fallback names");
+      }
       
     } catch (e) {
       if (debugMode) {
         console.error("❌ [DEBUG]: AI execution failed:", e);
       }
-      throw new Error(`AI naming failed: ${e.message}`);
+      // ✅ NEW: Use fallback names immediately instead of throwing
+      if (debugMode) {
+        console.log("🔄 [DEBUG]: Using fallback names due to AI error");
+      }
+      aiResult = {
+        namedGroups: {},
+        error: null
+      };
+      // Populate with fallbacks below
     }
 
-    if (currentSignal.aborted) throw new Error("Cancelled");
+    let domainToGroupName = aiResult?.namedGroups || {};
+
+    // ✅ NEW: Always ensure all domains have names
+    for (const domain of domainList) {
+      if (!domainToGroupName[domain]) {
+        domainToGroupName[domain] = createBasicGroupName(domain);
+        if (debugMode) {
+          console.log(`🔄 [DEBUG]: Added fallback name for "${domain}": "${domainToGroupName[domain]}"`);
+        }
+      }
+    }
 
     if (debugMode) {
-      console.log("📥 [DEBUG]: AI naming response received");
-      console.log("📥 AI naming complete");
-    }
-
-    if (aiResult.error) {
-      throw new Error(aiResult.error);
-    }
-
-    const namedGroups = aiResult.namedGroups;
-
-    if (!namedGroups || Object.keys(namedGroups).length === 0) {
-      throw new Error("AI failed to name groups.");
-    }
-
-    if (debugMode) {
-      console.log(`📋 [DEBUG]: ${Object.keys(namedGroups).length} groups ready to create`);
+      console.log(`📋 [DEBUG]: ${Object.keys(domainToGroupName).length} groups with names (including fallbacks)`);
     }
 
     // Update status: GROUPING
@@ -159,23 +337,21 @@ export async function groupTabs() {
       tab_grouping_status: {
         status: 'grouping',
         message: '🎨 Creating Groups...',
-        groupCount: Object.keys(namedGroups).length,
+        groupCount: Object.keys(groups).length,
         timestamp: Date.now()
       }
     });
 
-    // ✅ FIX: Don't wait for popup to close - keep going
-    // Remove the 500ms delay entirely
-
-    // ========== STEP 3: CREATE TAB GROUPS ==========
+    // ========== STEP 4: CREATE TAB GROUPS ==========
     const colors = ["blue", "red", "green", "yellow", "pink", "purple", "cyan"];
     let colorIndex = 0;
     const report = [];
     const alreadyGroupedIds = new Set();
     const failedGroups = [];
 
-    // Track existing groups - SKIP these tabs
-    for (const tab of tabs) {
+    // Get fresh tab list to check for already-grouped tabs
+    const allTabs = await chrome.tabs.query({ windowId });
+    for (const tab of allTabs) {
       if (tab.groupId && tab.groupId > 0) {
         alreadyGroupedIds.add(tab.id);
         if (debugMode) {
@@ -184,15 +360,14 @@ export async function groupTabs() {
       }
     }
 
-    if (debugMode) {
-      console.log(`ℹ️ [DEBUG]: ${alreadyGroupedIds.size} tabs already in groups (skipping)`);
-    }
-
-    // ✅ FIX: Process groups with BETTER error handling
-    for (const [groupName, tabIds] of Object.entries(namedGroups)) {
-      if (currentSignal.aborted) throw new Error("Cancelled");
+    // Process each domain group
+    for (const domain of domainList) {
+      if (currentSignal?.aborted) throw new Error("Cancelled");
 
       try {
+        const tabIds = groups[domain].tabIds;
+        const groupName = domainToGroupName[domain] || createBasicGroupName(domain);
+
         // Filter out already grouped tabs
         let ungroupedTabIds = tabIds.filter(id => !alreadyGroupedIds.has(id));
 
@@ -200,6 +375,7 @@ export async function groupTabs() {
           if (debugMode) {
             console.log(`⚠️ [DEBUG]: Skipping "${groupName}" - only ${ungroupedTabIds.length} ungrouped tabs`);
           }
+          failedGroups.push({ name: groupName, reason: 'insufficient_tabs' });
           continue;
         }
 
@@ -210,8 +386,8 @@ export async function groupTabs() {
             const tab = await chrome.tabs.get(id);
             
             // ✅ STRICT validation
-            if (tab.windowId !== currentWindowId) {
-              if (debugMode) console.warn(`⚠️ [DEBUG]: Tab ${id} moved to different window`);
+            if (tab.windowId !== windowId) {
+              if (debugMode) console.warn(`⚠️ [DEBUG]: Tab ${id} in different window (${tab.windowId} vs ${windowId})`);
               continue;
             }
             if (tab.pinned) {
@@ -237,19 +413,18 @@ export async function groupTabs() {
             if (debugMode) {
               console.warn(`⚠️ [DEBUG]: Tab ${id} invalid: ${err.message}`);
             }
-            // Tab was likely closed - skip it
           }
         }
 
         if (validTabIds.length < 2) {
           if (debugMode) {
-            console.warn(`⚠️ [DEBUG]: "${groupName}" - not enough valid ungrouped tabs after re-validation`);
+            console.warn(`⚠️ [DEBUG]: "${groupName}" - not enough valid tabs after re-validation`);
           }
           failedGroups.push({ name: groupName, reason: 'insufficient_valid_tabs' });
           continue;
         }
 
-        // ✅ FIX: Create group with retry logic
+        // ✅ Create group with retry logic
         let groupId;
         try {
           groupId = await chrome.tabs.group({ tabIds: validTabIds });
@@ -280,7 +455,6 @@ export async function groupTabs() {
           if (debugMode) {
             console.warn(`⚠️ [DEBUG]: Could not update group properties: ${err.message}`);
           }
-          // Continue anyway - group was created
         }
 
         report.push({
@@ -296,15 +470,13 @@ export async function groupTabs() {
           console.log(`✅ [DEBUG]: Created "${groupName}" (${validTabIds.length} tabs, ID: ${groupId})`);
         }
 
-        // ✅ Shorter delay between groups
         await new Promise(r => setTimeout(r, 25));
 
       } catch (err) {
         if (debugMode) {
-          console.error(`❌ [DEBUG]: Outer error for "${groupName}": ${err.message}`);
+          console.error(`❌ [DEBUG]: Outer error for "${domain}": ${err.message}`);
         }
-        failedGroups.push({ name: groupName, reason: err.message });
-        // ✅ Continue to next group instead of breaking
+        failedGroups.push({ name: domainToGroupName[domain], reason: err.message });
       }
     }
 
@@ -315,7 +487,7 @@ export async function groupTabs() {
     // Complete
     const summary = report.map(g => `📌 ${g.name} (${g.tabCount} tabs)`).join('\n');
     const failedSummary = failedGroups.length > 0 
-      ? `\n\n⚠️ Failed to create ${failedGroups.length} groups\nTry again (if you need)...`
+      ? `\n\n⚠️ Was Already Created/Failed to create ${failedGroups.length} groups`
       : '';
 
     if (debugMode) {
@@ -323,7 +495,10 @@ export async function groupTabs() {
     }
     console.log(`🎉 Complete! ${report.length} groups created${failedSummary}`);
 
-    // Store result as JSON
+    // Cleanup preview
+    await chrome.storage.local.remove('tab_grouping_preview');
+
+    // Store final result
     await chrome.storage.local.set({
       tab_grouping_status: {
         status: 'complete',
@@ -346,6 +521,7 @@ export async function groupTabs() {
       details: report,
       failedGroups: failedGroups
     };
+
   } catch (e) {
     console.error("❌ [Tab Grouping]:", e.message);
 
@@ -371,10 +547,9 @@ export async function groupTabs() {
 }
 
 /**
- * GROUP TABS BY DOMAIN
- * Simple URL-based grouping (no AI involved)
+ * ✅ FIXED: GROUP TABS BY MAIN DOMAIN (extracts main domain from subdomains)
  */
-function groupTabsByDomain(accessibleTabs, debug) {
+function groupTabsByMainDomain(accessibleTabs, debug) {
   const domainMap = {};
   const minGroupSize = 2;
 
@@ -383,12 +558,36 @@ function groupTabsByDomain(accessibleTabs, debug) {
 
     try {
       const urlObj = new URL(tab.url);
-      const domain = urlObj.hostname || 'unknown';
-
-      if (!domainMap[domain]) {
-        domainMap[domain] = [];
+      let domain = urlObj.hostname || 'unknown';
+      
+      // ✅ FIXED: Extract main domain properly
+      // e.g., "googlechromeai2025.devpost.com" -> "devpost.com"
+      // e.g., "mail.google.com" -> "google.com"
+      // e.g., "www.github.com" -> "github.com"
+      const domainParts = domain.split('.');
+      
+      let mainDomain = domain;
+      if (domainParts.length > 2) {
+        // Check if it's a known 2-level TLD (co.uk, com.au, etc.)
+        const twoLevelTLDs = ['co.uk', 'com.au', 'co.in', 'co.jp', 'com.br'];
+        const lastTwo = domainParts.slice(-2).join('.');
+        
+        if (twoLevelTLDs.includes(lastTwo)) {
+          mainDomain = domainParts.slice(-3).join('.');
+        } else {
+          mainDomain = domainParts.slice(-2).join('.');
+        }
       }
-      domainMap[domain].push(tab);
+
+      if (!domainMap[mainDomain]) {
+        domainMap[mainDomain] = {
+          tabIds: [],
+          urls: []
+        };
+      }
+      domainMap[mainDomain].tabIds.push(tab.id);
+      domainMap[mainDomain].urls.push(tab.url);
+
     } catch (err) {
       if (debug) {
         console.warn(`⚠️ [DEBUG]: Could not parse URL: ${tab.url}`);
@@ -398,15 +597,15 @@ function groupTabsByDomain(accessibleTabs, debug) {
 
   // Filter groups with fewer than minGroupSize tabs
   const result = {};
-  for (const [domain, tabList] of Object.entries(domainMap)) {
-    if (tabList.length >= minGroupSize) {
-      result[domain] = tabList.map(t => t.id);
+  for (const [domain, groupData] of Object.entries(domainMap)) {
+    if (groupData.tabIds.length >= minGroupSize) {
+      result[domain] = groupData;
       if (debug) {
-        console.log(`✅ [DEBUG]: Domain group "${domain}": ${tabList.length} tabs`);
+        console.log(`✅ [DEBUG]: Domain group "${domain}": ${groupData.tabIds.length} tabs`);
       }
     } else {
       if (debug) {
-        console.log(`⚠️ [DEBUG]: Excluding domain "${domain}": only ${tabList.length} tab(s)`);
+        console.log(`⚠️ [DEBUG]: Excluding domain "${domain}": only ${groupData.tabIds.length} tab(s)`);
       }
     }
   }
@@ -419,40 +618,40 @@ function groupTabsByDomain(accessibleTabs, debug) {
 }
 
 /**
- * AI NAMING - Gets creative names for domain-based groups
+ * ✅ FIXED: AI NAMING with user interaction requirement
  */
-async function executeAINaming(urlGroups, debug) {
+/**
+ * ✅ FIXED: AI NAMING with fallback names
+ */
+async function executeAINaming(domainInfo, debug) {
   try {
     if (debug) {
       console.log("🤖 [DEBUG][AI]: Starting naming in page context");
-      console.log(`📊 [DEBUG][AI]: ${Object.keys(urlGroups).length} domain groups to name`);
+      console.log(`📊 [DEBUG][AI]: ${domainInfo.domains.length} domain groups to name`);
     }
-
-    // Build prompt with domain groups
-    const domainDescriptions = Object.entries(urlGroups)
-      .map(([domain, tabIds]) => `${domain} (${tabIds.length} tabs)`)
-      .join('\n');
 
     const prompt = `You are Tabetha Weaver, expert at naming browser tab groups.
 
-Provide creative, meaningful names for these domain-based tab groups:
+      Provide creative, meaningful names for these domain-based tab groups:
 
-${domainDescriptions}
+      ${domainInfo.descriptions}
 
-INSTRUCTIONS:
-1. Output ONE group name per line
-2. Format: DOMAIN|GROUP_NAME
-3. Replace DOMAIN with the exact domain from above
-4. Replace GROUP_NAME with a short, meaningful category (max 25 chars)
-5. Examples: 
-   - github.com|Coding & Dev
-   - youtube.com|Video Content
-   - twitter.com|Social Networks
-   - amazon.com|Shopping
-6. Be creative but concise
-7. Return ONLY the naming output (DOMAIN|GROUP_NAME per line), NO explanations
+      INSTRUCTIONS:
+      1. Output ONE group name per line
+      2. Format: DOMAIN|GROUP_NAME
+      3. Replace DOMAIN with the exact domain from above
+      4. Replace GROUP_NAME with a short, meaningful category (max 25 chars)
+      5. Examples: 
+        - github.com|Coding & Dev
+        - youtube.com|Video Content
+        - twitter.com|Social Networks
+        - amazon.com|Shopping
+        - devpost.com|Hackathons & Projects
+      6. Be creative but concise
+      7. Return ONLY the naming output (DOMAIN|GROUP_NAME per line), NO explanations
 
-Start:`;
+      Start:
+    `;
 
     if (debug) {
       console.log("📤 [DEBUG][AI]: Checking availability...");
@@ -468,6 +667,12 @@ Start:`;
       throw new Error("AI model not available on this system.");
     }
 
+    if (availability === "downloading") {
+      if (debug) {
+        console.log("⏳ [DEBUG][AI]: Model downloading, waiting for interaction...");
+      }
+    }
+
     if (debug) {
       console.log("🤖 [DEBUG][AI]: Creating session...");
     }
@@ -479,7 +684,6 @@ Start:`;
           if (debug) {
             console.log(`📥 [DEBUG][AI]: Download: ${percent}%`);
           }
-          console.log(`📥 Model: ${percent}%`);
         });
       }
     });
@@ -488,7 +692,6 @@ Start:`;
       console.log("✅ [DEBUG][AI]: Session ready");
       console.log("🤖 AI naming groups...");
     }
-
 
     const params = await LanguageModel.params();
 
@@ -504,7 +707,7 @@ Start:`;
 
     session.destroy();
 
-    // Parse response: DOMAIN|GROUP_NAME format
+    // Parse response
     const namedGroups = {};
     const lines = aiResponse.trim().split('\n');
 
@@ -515,76 +718,55 @@ Start:`;
     for (const line of lines) {
       const trimmed = String(line || '').trim();
       
-      // Skip empty lines
-      if (!trimmed) continue;
-      
-      // Skip lines without pipe
-      if (!trimmed.includes('|')) {
-        if (debug) {
-          console.log(`⏭️ [DEBUG][AI]: Skipping non-format line: "${String(trimmed).substring(0, 50)}"`);
-        }
-        continue;
-      }
+      if (!trimmed || !trimmed.includes('|')) continue;
 
       const parts = trimmed.split('|');
-      if (parts.length < 2) {
-        if (debug) {
-          console.log(`⚠️ [DEBUG][AI]: Invalid format (expected 2+ parts): "${trimmed}"`);
-        }
-        continue;
-      }
+      if (parts.length < 2) continue;
 
       const domainRaw = String(parts[0] || '').trim().toLowerCase();
-      // join the rest in case the group name contains pipes
       const groupNameRaw = parts.slice(1).join('|').trim();
 
-      // Validate inputs
-      if (!domainRaw || !groupNameRaw) {
+      if (!domainRaw || !groupNameRaw) continue;
+
+      // Check if domain is in our list
+      if (!domainInfo.domains.includes(domainRaw)) {
         if (debug) {
-          console.log(`⚠️ [DEBUG][AI]: Empty domain or name in: "${trimmed}"`);
+          console.log(`⚠️ [DEBUG][AI]: Domain "${domainRaw}" not in request`);
         }
         continue;
       }
 
-      // Check if domain exists in urlGroups
-      if (!urlGroups[domainRaw]) {
-        if (debug) {
-          console.log(`⚠️ [DEBUG][AI]: Domain "${domainRaw}" not found in groups`);
-        }
-        continue;
-      }
-
-    // Normalize group name (defensive)
-    const groupName = String(groupNameRaw || '')
-      .replace(/[^a-zA-Z0-9\s&-]/g, '') // Remove special chars
-      .trim()
-      .substring(0, 50);
+      const groupName = String(groupNameRaw)
+        .replace(/[^a-zA-Z0-9\s&-]/g, '')
+        .trim()
+        .substring(0, 50);
 
       if (groupName.length < 2) {
         if (debug) {
-          console.log(`⚠️ [DEBUG][AI]: Group name too short after normalization: "${groupName}"`);
+          console.log(`⚠️ [DEBUG][AI]: Group name too short: "${groupName}"`);
         }
         continue;
       }
 
-      // Use group name as key, but keep tab IDs from original domain
-      namedGroups[groupName] = urlGroups[domainRaw];
+      namedGroups[domainRaw] = groupName;
 
       if (debug) {
         console.log(`✅ [DEBUG][AI]: Named "${domainRaw}" as "${groupName}"`);
       }
     }
 
-    if (Object.keys(namedGroups).length === 0) {
-      throw new Error("No valid group names created from AI response.\nPlease try again.");
+    // ✅ NEW: Ensure ALL domains have names (use fallback if AI missed any)
+    for (const domain of domainInfo.domains) {
+      if (!namedGroups[domain]) {
+        namedGroups[domain] = createBasicGroupName(domain);
+        if (debug) {
+          console.log(`🔄 [DEBUG][AI]: Using fallback for "${domain}": "${namedGroups[domain]}"`);
+        }
+      }
     }
 
     if (debug) {
-      console.log(`✅ [DEBUG][AI]: ${Object.keys(namedGroups).length} final named groups`);
-      Object.entries(namedGroups).forEach(([name, ids]) => {
-        console.log(`  📌 "${name}": ${ids.length} tabs`);
-      });
-      console.log("✅ AI naming complete");
+      console.log(`✅ [DEBUG][AI]: ${Object.keys(namedGroups).length} groups named (with fallbacks)`);
     }
 
     return { namedGroups, error: null };
@@ -596,9 +778,50 @@ Start:`;
       console.error("❌ [DEBUG][AI]:", e);
     }
 
+    // ✅ NEW: Return ALL domains with fallback names on error
+    const fallbackGroups = {};
+    for (const domain of domainInfo.domains) {
+      fallbackGroups[domain] = createBasicGroupName(domain);
+    }
+
     return {
-      namedGroups: null,
-      error: e.message || "AI naming failed"
+      namedGroups: fallbackGroups,
+      error: null, // ✅ Don't error - use fallbacks instead
+      usingFallback: true
     };
   }
+}
+
+/**
+ * Helper: Create a basic group name from a domain
+ */
+function createBasicGroupName(domain) {
+  let cleaned = domain.replace(/^www\./, '');
+  const parts = cleaned.split('.');
+  let baseName = parts[0] || domain;
+  
+  baseName = baseName.charAt(0).toUpperCase() + baseName.slice(1).toLowerCase();
+  
+  const specialCases = {
+    'github': 'GitHub',
+    'devpost': 'DevPost & Hackathons',
+    'google': 'Google Services',
+    'googlechromeai2025': 'Chrome AI Challenge',
+    'youtube': 'YouTube Videos',
+    'twitter': 'Twitter/X',
+    'linkedin': 'LinkedIn',
+    'facebook': 'Facebook',
+    'instagram': 'Instagram',
+    'reddit': 'Reddit',
+    'stackoverflow': 'Stack Overflow',
+    'gmail': 'Gmail',
+    'outlook': 'Outlook',
+    'amazon': 'Amazon',
+    'ebay': 'eBay',
+    'netflix': 'Netflix',
+    'spotify': 'Spotify',
+    'docs': 'Google Docs'
+  };
+  
+  return specialCases[baseName.toLowerCase()] || baseName;
 }
