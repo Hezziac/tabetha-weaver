@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabetha Weaver</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="assistant-container">
+    <div class="header">
+        <h1>Tabetha Weaver 🤖</h1>
+        <p>Your browser's AI assistant</p>
+        <button id="writer-mode-btn" title="Toggle Writer Mode">✍️</button>
+    </div>
+    
+    <div class="main-content">
+        <p id="output">Hi there! I'm Tabetha. How can I help you today?</p>
+        
+        <!-- GROUP PREVIEW SECTION (Hidden by default) -->
+        <div id="group-preview-section" style="display:none;">
+            <div class="group-preview-header">
+                <h3>🎨 AI Group Suggestions</h3>
+                <p id="group-count-label">Loading suggestions...</p>
+            </div>
+            <div id="group-preview-list" class="group-preview-list"></div>
+            <div class="group-preview-actions">
+                <button id="confirm-groups-btn" class="btn-confirm">✅ Confirm & Create</button>
+                <button id="retry-groups-btn" class="btn-retry">🔄 Regenerate</button>
+                <button id="cancel-groups-btn" class="btn-cancel">❌ Cancel</button>
+            </div>
+        </div>
+        
+        <button id="generate-alt-btn" style="display:none;">🖼️ Generate Alt Text</button>
+        <button id="rewrite-text-btn" style="display:none;">✏️ Rewrite Text</button>
+    
+
+        <!-- Writer UI -->
+        <div id="writer-section" style="display:none;">
+            <textarea id="writer-instructions" rows="3" placeholder="What would you like me to write? (e.g., 'Turn this into a professional email')"></textarea>
+            <div class="writer-button-group">
+                <button id="write-text-btn">✍️ Generate New Writing</button>
+            </div>
+        </div>
+
+        <div class="summarize-options">
+            <button id="summarize-btn">📋 Summarize This Page</button>
+            <div class="summary-length-group">
+                <label for="summary-length-select">Size</label>
+                <select id="summary-length-select">
+                    <option value="short">Short</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="long">Long</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="paste-summarize-area">
+            <button id="paste-summarize-btn">📝 Summarize Pasted Text</button>
+            <textarea id="paste-textarea" rows="5" maxlength="15000" placeholder="Paste text here (Max 15,000 chars)" style="display:none;"></textarea>
+            <button id="submit-pasted-btn" style="display:none;">📊 Generate Summary</button>
+        </div>
+        
+        <button id="group-tabs-btn">📂 Group All Tabs</button>
+        
+        <div class="prompt-container">
+            <textarea id="prompt-input" placeholder="Talk to Tabetha..." rows="1"></textarea>
+            <button id="send-prompt-btn" class="send-btn">Send</button>
+        </div>
+        
+        <div class="debug-section">
+            <label class="debug-label">
+                <input type="checkbox" id="debug-mode"> 
+                🐛 Debug Mode
+            </label>
+            <button id="clear-log-btn" class="clear-log-btn">🗑️ Clear Log</button>
+        </div>
+        
+        <pre id="output-log"></pre>
+    </div>
+</div>
+
+<script src="popup.js" type="module"></script>
+</body>
+</html>

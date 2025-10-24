@@ -1,0 +1,297 @@
+body {
+    width: 375px;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 15px;
+    background-color: #F8F9FC; /* Light gray background */
+    color: #333;
+}
+
+.assistant-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 1.5rem;
+    color: #4A6FA5; /* Your brand color */
+    margin: 0;
+}
+
+p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+#output {
+    background-color: #F8F9F9;
+    padding: 16px;
+    border-radius: 8px;
+    text-align: left;
+    white-space: pre-wrap;
+    min-height: 50px;
+    border: 1px solid #e0e0e0;
+    line-height: 1.5;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+/* Optional: color-code status */
+#output-log:has(.success) { border-left: 4px solid #28a745; }
+#output-log:has(.error) { border-left: 4px solid #dc3545; }
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.header {
+    position: relative;
+}
+
+/* end Dark Mode Button */
+
+/* ---------------------------------
+   SECTION: SUMMARIZE OPTIONS (Buttons + Select)
+   --------------------------------- */
+
+.summarize-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.summary-length-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    margin-left: auto;
+}
+
+.summary-length-group label {
+    font-size: 0.7rem;
+    color: #777;
+    font-weight: normal;
+    text-transform: uppercase;
+}
+
+button, select {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+#summarize-btn, #group-tabs-btn {
+    flex-grow: 1;
+    background-color: #4A6FA5;
+    color: white;
+    box-shadow: 0 2px 4px rgba(74, 111, 165, 0.3);
+}
+
+button:hover {
+    background-color: #385a92;
+    box-shadow: 0 4px 8px rgba(74, 111, 165, 0.4);
+    transform: translateY(-1px);
+}
+
+select {
+    width: 85px;
+    background-color: #f0f2f5;
+    color: #333;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-weight: normal;
+    text-align: center;
+    text-align-last: center;
+    padding-right: 5px;
+}
+
+select:hover {
+    background-color: #e0e2e5;
+}
+
+/* ---------------------------------
+   SECTION: TEXT AREA STYLING (PASTE AND PROMPT)
+   --------------------------------- */
+/* --- Chat Prompt Area --- */
+.prompt-container {
+    position: relative;
+    width: 100%;
+    margin-top: 16px;
+}
+
+#prompt-input {
+    width: 100%;
+    padding: 10px 40px 10px 12px; /* extra right padding for button */
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 44px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+#prompt-input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.send-btn {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease, background-color 0.2s ease;
+    z-index: 2;
+}
+
+.send-btn.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.send-btn:hover {
+    background-color: #4338ca;
+}
+
+.send-btn:active {
+    transform: translateY(-50%) scale(0.97);
+}
+
+.paste-summarize-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#paste-textarea {
+    width: 100%;
+    padding: 10px 15px;
+    border-radius: 12px; /* Softer rounded corners */
+    border: none; /* Remove harsh border */
+    background-color: #f0f2f5;
+    font-family: sans-serif;
+    font-size: 0.9rem;
+    color: #333;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Soft inset shadow */
+    resize: none;
+    box-sizing: border-box;
+    transition: all 0.3s ease-in-out; /* Enable smooth transitions */
+    outline: none;
+}
+
+/* Focus and Glow Effect for ALL Textareas */
+#paste-textarea:focus, #prompt-input:focus {
+    border: none; /* Ensure border remains off */
+    box-shadow: 
+        0 0 0 2px #fff, /* Inner white ring */
+        0 0 0 4px #6B8EB6; /* Outer blue glow ring */
+    background-color: #fff;
+}
+
+#paste-textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+
+#submit-pasted-btn {
+    background-color: #6B8EB6;
+    color: white;
+    font-size: 0.9rem;
+    padding: 8px 15px;
+}
+
+/* ---------------------------------
+   SECTION: LOG OUTPUT
+   --------------------------------- */
+#output-log {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 150px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #333;
+    border: 1px solid #eee;
+}
+
+#writer-section {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f0f8ff;
+    border-radius: 8px;
+    border: 2px solid #4A6FA5;
+}
+
+#writer-instructions {
+    width: 92%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    margin-bottom: 10px;
+    resize: vertical;
+}
+
+#writer-instructions:focus {
+    outline: none;
+    border-color: #4A6FA5;
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+}
+
+#write-text-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#write-text-btn:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+#write-text-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+

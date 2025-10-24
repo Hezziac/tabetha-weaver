@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tabetha Weaver Settings</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            color: #4A6FA5;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .option-group {
+            margin: 25px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin: 12px 0 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        input[type="radio"] {
+            margin-right: 8px;
+        }
+        button {
+            background-color: #4A6FA5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            display: block;
+            margin: 30px auto 0;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #385a92;
+        }
+        #status {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #4A6FA5;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .info-box h4 {
+            margin: 0 0 10px 0;
+            color: #4A6FA5;
+        }
+        .info-box p {
+            margin: 5px 0;
+            color: #555;
+            font-size: 0.9em;
+        }
+        .rewriter-info, .writer-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .rewriter-info strong, .writer-info strong {
+            color: #333;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .comparison-table th {
+            background-color: #4A6FA5;
+            color: white;
+            font-weight: bold;
+        }
+        .comparison-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚙️ Tabetha Weaver Settings</h1>
+    
+    <div class="option-group">
+        <h3>📝 Summarizer Type</h3>
+        <p>Choose how you want summaries to be formatted:</p>
+        
+        <label>
+            <input type="radio" name="summarizerType" value="key-points">
+            Key Points (Bullet list)
+        </label>
+        
+        <label>
+            <input type="radio" name="summarizerType" value="tldr">
+            TL;DR (Short overview)
+        </label>
+        
+        <label>
+            <input type="radio" name="summarizerType" value="teaser">
+            Teaser (Intriguing highlights) - Default
+        </label>
+        
+        <label>
+            <input type="radio" name="summarizerType" value="headline">
+            Headline (Single sentence summary)
+        </label>
+    </div>
+
+    <div class="option-group">
+        <h3>📏 Default Summary Length</h3>
+        <p>This will be pre-selected when you open the popup:</p>
+        
+        <label>
+            <input type="radio" name="summaryLength" value="short">
+            Short (Default)
+        </label>
+        
+        <label>
+            <input type="radio" name="summaryLength" value="medium">
+            Medium
+        </label>
+        
+        <label>
+            <input type="radio" name="summaryLength" value="long">
+            Long
+        </label>
+    </div>
+
+    <div class="option-group">
+        <h3>✏️ Text Rewriter API</h3>
+        <div class="info-box">
+            <h4>What is the Rewriter API?</h4>
+            <p><strong>Purpose:</strong> The Rewriter API takes existing text and transforms it according to your needs - changing tone, removing redundancy, or simplifying language.</p>
+            <p><strong>How to use:</strong> Highlight any text on a webpage, right-click, and choose your preferred rewriting style from the "Tabetha Weaver Rewriting" menu.</p>
+        </div>
+        
+        <div class="rewriter-info">
+            <h4>🧒 Simplify - Explain Like I'm 5</h4>
+            <p>Rephrases text using simpler words and concepts. Excellent for academic papers or complex jargon. Makes content accessible to everyone.</p>
+            <p><em>Example: Technical documentation → Easy-to-understand explanation</em></p>
+        </div>
+        
+        <div class="rewriter-info">
+            <h4>💼 Make Formal - Professional Tone</h4>
+            <p>Increases the formality of text to suit business or academic audiences. Transforms casual writing into professional communication.</p>
+            <p><em>Example: Casual message → Professional email</em></p>
+        </div>
+        
+        <div class="rewriter-info">
+            <h4>😊 Make Casual - Friendly Tone</h4>
+            <p>Lowers formality for social media or internal team communication. Makes formal text more approachable and friendly.</p>
+            <p><em>Example: Corporate announcement → Social media post</em></p>
+        </div>
+        
+        <div class="rewriter-info">
+            <h4>✂️ De-Redundify - Tighten Up Text</h4>
+            <p>Removes redundancies and less-important information to fit word limits. Makes text more concise while preserving meaning.</p>
+            <p><em>Example: 500-word draft → 200-word concise version</em></p>
+        </div>
+    </div>
+
+    <div class="option-group">
+        <h3>✍️ Text Writer API</h3>
+        <div class="info-box">
+            <h4>What is the Writer API?</h4>
+            <p><strong>Purpose:</strong> The Writer API creates NEW, original content based on your instructions and reference material. It generates fresh text rather than transforming existing content.</p>
+            <p><strong>How to use:</strong> Highlight reference text on a webpage, right-click, choose "Write Draft" from the "Tabetha Weaver Writing" menu, then provide instructions for what you'd like created.</p>
+        </div>
+        
+        <div class="writer-info">
+            <h4>✍️ Write Draft</h4>
+            <p>Generates new content based on selected text and your instructions.</p>
+            <p><strong>Example Use Cases:</strong></p>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+                <li>Selected product features → "Write a marketing description"</li>
+                <li>Selected meeting notes → "Draft a thank-you email"</li>
+                <li>Selected article excerpt → "Create a blog post introduction"</li>
+                <li>Selected bullet points → "Write a professional summary"</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="option-group">
+        <h3>🔍 Writer vs Rewriter Comparison</h3>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>✍️ Writer API</th>
+                    <th>✏️ Rewriter API</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Primary Goal</strong></td>
+                    <td>Generate new, original content</td>
+                    <td>Revise and restructure existing text</td>
+                </tr>
+                <tr>
+                    <td><strong>Input</strong></td>
+                    <td>A writing prompt/task + reference text</td>
+                    <td>Existing text to transform</td>
+                </tr>
+                <tr>
+                    <td><strong>Example Task</strong></td>
+                    <td>"Write a thank-you note"</td>
+                    <td>"Make this thank-you note more formal"</td>
+                </tr>
+                <tr>
+                    <td><strong>Output</strong></td>
+                    <td>Newly created text</td>
+                    <td>Transformed version of original</td>
+                </tr>
+                <tr>
+                    <td><strong>Use When</strong></td>
+                    <td>You need something written from scratch</td>
+                    <td>You want to change existing text</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <button id="save-options">💾 Save Settings</button>
+    <p id="status"></p>
+
+    <script src="options.js"></script>
+</body>
+</html>
