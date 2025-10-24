@@ -295,3 +295,21 @@ select:hover {
     cursor: not-allowed;
 }
 
+/* ---------------------------------
+   SECTION: Settings Button Popup
+   --------------------------------- */
+
+   #settings-btn:hover {
+    background-color: #2aa7d0;
+    transform: scale(1.1);
+}
+
+
+/* ---------------------------------
+   SECTION: Writer Mode Button Popup
+   --------------------------------- */
+
+#writer-mode-btn:hover {
+    background-color: #28a745;
+    transform: scale(1.1);
+}

@@ -1,12 +1,7 @@
 // popup.js - COMPLETE POPUP WITHOUT PROOFREADER
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("✅ Tabetha Weaver Extension Loaded");
-    
-    // Global error handler
-    window.addEventListener('error', (event) => {
-        console.error("🚨 Uncaught JS Error:", event.error);
-    });
+
     
     // UI elements
     const summarizeBtn = document.getElementById('summarize-btn');
@@ -30,8 +25,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const writeTextBtn = document.getElementById('write-text-btn');
     const writerInstructions = document.getElementById('writer-instructions');
     
+    // settings button
+    const settingsBtn = document.getElementById('settings-btn');
+
     // Writer mode state
     let isWriterModeActive = false;
+
+    // SETTINGS BUTTON
+    settingsBtn.addEventListener('click', () => {
+        chrome.runtime.openOptionsPage();
+    });
 
     // Initial state
     clearLogBtn.style.display = logElement.textContent.trim().length === 0 ? 'none' : 'inline-block';
@@ -788,6 +791,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     
-    console.log("✅ Tabetha Weaver Ready");
     appendToLog("✅ Extension Ready", true);
 });

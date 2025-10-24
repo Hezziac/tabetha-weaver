@@ -4,253 +4,534 @@
     <meta charset="UTF-8">
     <title>Tabetha Weaver Settings</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            padding: 20px;
-            max-width: 700px;
+            padding: 30px;
+            max-width: 900px;
             margin: 0 auto;
-            background-color: #f8f9fa;
+            background-color: #2a2a2a;
+            color: #e0e0e0;
         }
+
         h1 {
-            color: #4A6FA5;
+            color: #64b5f6;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            font-size: 2.2rem;
+            font-weight: 600;
         }
-        .option-group {
-            margin: 25px 0;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+
+        h2 {
+            color: #90caf9;
+            font-size: 1.5rem;
+            font-weight: 600;
+            padding: 20px 0 15px 0;
+            margin: 40px 0 20px 0;
+            border-bottom: 3px solid #64b5f6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
         h3 {
             margin-top: 0;
-            color: #333;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+            color: #90caf9;
+            border-bottom: 2px solid #444;
+            padding-bottom: 12px;
+            font-size: 1.3rem;
+            margin-bottom: 16px;
         }
+
+        h4 {
+            color: #64b5f6;
+            font-size: 1.1rem;
+            margin: 12px 0 8px 0;
+        }
+
+        p {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #d0d0d0;
+            margin-bottom: 12px;
+        }
+
+        ul, li {
+            font-size: 1rem;
+            color: #d0d0d0;
+            line-height: 1.8;
+        }
+
+        /* ========== SETTINGS SECTION ========== */
+        .settings-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 40px;
+            border-radius: 16px;
+            margin-bottom: 50px;
+            border: 2px solid #64b5f6;
+            box-shadow: 0 8px 32px rgba(100, 181, 246, 0.2);
+        }
+
+        .settings-section h2 {
+            margin-top: 0;
+        }
+
+        .settings-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #444;
+        }
+
+        .settings-header p {
+            color: #a0a0a0;
+            font-size: 1.05rem;
+        }
+
+        .option-group {
+            margin: 30px 0;
+            padding: 25px;
+            background: #333;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border-left: 4px solid #64b5f6;
+        }
+
+        .option-group h3 {
+            border-bottom-color: #444;
+        }
+
         label {
             display: block;
-            margin: 12px 0 8px;
+            margin: 14px 0 10px;
             font-weight: 500;
-            color: #555;
+            color: #d0d0d0;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: color 0.2s;
         }
+
+        label:hover {
+            color: #90caf9;
+        }
+
         input[type="radio"] {
-            margin-right: 8px;
+            margin-right: 10px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            accent-color: #64b5f6;
         }
+
+        .save-button-container {
+            text-align: center;
+            margin: 50px 0 20px 0;
+            padding: 30px 0;
+        }
+
         button {
-            background-color: #4A6FA5;
-            color: white;
+            background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
+            color: #1a1a1a;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 16px 40px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 16px;
-            display: block;
-            margin: 30px auto 0;
-            transition: background-color 0.2s;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 6px 20px rgba(100, 181, 246, 0.4);
         }
+
         button:hover {
-            background-color: #385a92;
+            background: linear-gradient(135deg, #90caf9 0%, #64b5f6 100%);
+            box-shadow: 0 8px 28px rgba(100, 181, 246, 0.6);
+            transform: translateY(-3px);
         }
+
+        button:active {
+            transform: translateY(-1px);
+        }
+
         #status {
             text-align: center;
-            margin-top: 15px;
+            margin-top: 20px;
             font-weight: bold;
-            min-height: 24px;
+            min-height: 30px;
+            font-size: 1rem;
+            animation: slideIn 0.3s ease-out;
         }
-        .success { color: #28a745; }
-        .error { color: #dc3545; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success {
+            color: #81c784;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        /* ========== INFO SECTION ========== */
+        .info-section {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 16px;
+            border-left: 6px solid #90caf9;
+        }
+
+        .info-section h2 {
+            border-bottom-color: #90caf9;
+            color: #90caf9;
+            margin-top: 0;
+        }
+
+        .info-intro {
+            background: #2a3a4a;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #90caf9;
+            margin-bottom: 30px;
+        }
+
+        .info-intro p {
+            color: #b0c4ff;
+            font-size: 1.05rem;
+            margin: 0;
+        }
+
         .info-box {
-            background-color: #e7f3ff;
-            border-left: 4px solid #4A6FA5;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 4px;
+            background-color: #3a4a5a;
+            border-left: 4px solid #64b5f6;
+            padding: 18px;
+            margin: 18px 0;
+            border-radius: 6px;
         }
+
         .info-box h4 {
-            margin: 0 0 10px 0;
-            color: #4A6FA5;
+            margin: 0 0 12px 0;
+            color: #64b5f6;
+            font-size: 1.15rem;
         }
+
         .info-box p {
-            margin: 5px 0;
-            color: #555;
-            font-size: 0.9em;
+            margin: 8px 0;
+            color: #c0c0c0;
+            font-size: 0.95rem;
         }
+
         .rewriter-info, .writer-info {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
+            margin-top: 14px;
+            padding: 14px;
+            background: #3a3a3a;
+            border-radius: 6px;
+            border-left: 3px solid #90caf9;
         }
+
+        .rewriter-info h4, .writer-info h4 {
+            color: #64b5f6;
+            margin-top: 0;
+            font-size: 1.1rem;
+        }
+
+        .rewriter-info p, .writer-info p {
+            color: #d0d0d0;
+            font-size: 0.95rem;
+            margin: 8px 0;
+        }
+
         .rewriter-info strong, .writer-info strong {
-            color: #333;
+            color: #90caf9;
         }
+
+        .rewriter-info em, .writer-info em {
+            color: #a0c4ff;
+            font-style: italic;
+        }
+
+        .rewriter-info ul, .writer-info ul {
+            margin: 8px 0;
+            padding-left: 28px;
+        }
+
+        .rewriter-info li, .writer-info li {
+            margin: 6px 0;
+            font-size: 0.95rem;
+        }
+
+        .api-section {
+            margin: 40px 0;
+            padding: 25px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            border-left: 4px solid #90caf9;
+        }
+
+        .api-section h3 {
+            border-bottom-color: #444;
+            color: #90caf9;
+        }
+
         .comparison-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 20px 0;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
         }
+
         .comparison-table th, .comparison-table td {
-            padding: 10px;
+            padding: 14px;
             text-align: left;
-            border: 1px solid #ddd;
+            border: 1px solid #444;
+            font-size: 0.95rem;
         }
+
         .comparison-table th {
-            background-color: #4A6FA5;
-            color: white;
+            background-color: #64b5f6;
+            color: #1a1a1a;
             font-weight: bold;
+            font-size: 1rem;
         }
+
         .comparison-table tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: #3a3a3a;
+        }
+
+        .comparison-table td {
+            color: #d0d0d0;
+        }
+
+        .comparison-table strong {
+            color: #90caf9;
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #64b5f6;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #90caf9;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+                margin-bottom: 30px;
+            }
+
+            h2 {
+                font-size: 1.3rem;
+            }
+
+            .settings-section,
+            .info-section {
+                padding: 25px;
+            }
+
+            .option-group {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <h1>⚙️ Tabetha Weaver Settings</h1>
     
-    <div class="option-group">
-        <h3>📝 Summarizer Type</h3>
-        <p>Choose how you want summaries to be formatted:</p>
+    <!-- ========== SETTINGS SECTION ========== -->
+    <div class="settings-section">
+        <h2>🎛️ Your Preferences</h2>
         
-        <label>
-            <input type="radio" name="summarizerType" value="key-points">
-            Key Points (Bullet list)
-        </label>
+        <div class="settings-header">
+            <p>Customize how Tabetha works for you</p>
+        </div>
         
-        <label>
-            <input type="radio" name="summarizerType" value="tldr">
-            TL;DR (Short overview)
-        </label>
-        
-        <label>
-            <input type="radio" name="summarizerType" value="teaser">
-            Teaser (Intriguing highlights) - Default
-        </label>
-        
-        <label>
-            <input type="radio" name="summarizerType" value="headline">
-            Headline (Single sentence summary)
-        </label>
-    </div>
+        <div class="option-group">
+            <h3>📝 Summarizer Type</h3>
+            <p>Choose how you want summaries to be formatted:</p>
+            
+            <label>
+                <input type="radio" name="summarizerType" value="key-points">
+                <strong>Key Points</strong> — Bullet list format
+            </label>
+            
+            <label>
+                <input type="radio" name="summarizerType" value="tldr">
+                <strong>TL;DR</strong> — Short overview
+            </label>
+            
+            <label>
+                <input type="radio" name="summarizerType" value="teaser">
+                <strong>Teaser</strong> — Intriguing highlights (Default)
+            </label>
+            
+            <label>
+                <input type="radio" name="summarizerType" value="headline">
+                <strong>Headline</strong> — Single sentence summary
+            </label>
+        </div>
 
-    <div class="option-group">
-        <h3>📏 Default Summary Length</h3>
-        <p>This will be pre-selected when you open the popup:</p>
-        
-        <label>
-            <input type="radio" name="summaryLength" value="short">
-            Short (Default)
-        </label>
-        
-        <label>
-            <input type="radio" name="summaryLength" value="medium">
-            Medium
-        </label>
-        
-        <label>
-            <input type="radio" name="summaryLength" value="long">
-            Long
-        </label>
-    </div>
+        <div class="option-group">
+            <h3>📏 Default Summary Length</h3>
+            <p>This will be pre-selected when you open the popup:</p>
+            
+            <label>
+                <input type="radio" name="summaryLength" value="short">
+                <strong>Short</strong> — Quick overview (Default)
+            </label>
+            
+            <label>
+                <input type="radio" name="summaryLength" value="medium">
+                <strong>Medium</strong> — Balanced detail
+            </label>
+            
+            <label>
+                <input type="radio" name="summaryLength" value="long">
+                <strong>Long</strong> — Comprehensive
+            </label>
+        </div>
 
-    <div class="option-group">
-        <h3>✏️ Text Rewriter API</h3>
-        <div class="info-box">
-            <h4>What is the Rewriter API?</h4>
-            <p><strong>Purpose:</strong> The Rewriter API takes existing text and transforms it according to your needs - changing tone, removing redundancy, or simplifying language.</p>
-            <p><strong>How to use:</strong> Highlight any text on a webpage, right-click, and choose your preferred rewriting style from the "Tabetha Weaver Rewriting" menu.</p>
-        </div>
-        
-        <div class="rewriter-info">
-            <h4>🧒 Simplify - Explain Like I'm 5</h4>
-            <p>Rephrases text using simpler words and concepts. Excellent for academic papers or complex jargon. Makes content accessible to everyone.</p>
-            <p><em>Example: Technical documentation → Easy-to-understand explanation</em></p>
-        </div>
-        
-        <div class="rewriter-info">
-            <h4>💼 Make Formal - Professional Tone</h4>
-            <p>Increases the formality of text to suit business or academic audiences. Transforms casual writing into professional communication.</p>
-            <p><em>Example: Casual message → Professional email</em></p>
-        </div>
-        
-        <div class="rewriter-info">
-            <h4>😊 Make Casual - Friendly Tone</h4>
-            <p>Lowers formality for social media or internal team communication. Makes formal text more approachable and friendly.</p>
-            <p><em>Example: Corporate announcement → Social media post</em></p>
-        </div>
-        
-        <div class="rewriter-info">
-            <h4>✂️ De-Redundify - Tighten Up Text</h4>
-            <p>Removes redundancies and less-important information to fit word limits. Makes text more concise while preserving meaning.</p>
-            <p><em>Example: 500-word draft → 200-word concise version</em></p>
+        <div class="save-button-container">
+            <button id="save-options">💾 Save Settings</button>
+            <p id="status"></p>
         </div>
     </div>
 
-    <div class="option-group">
-        <h3>✍️ Text Writer API</h3>
-        <div class="info-box">
-            <h4>What is the Writer API?</h4>
-            <p><strong>Purpose:</strong> The Writer API creates NEW, original content based on your instructions and reference material. It generates fresh text rather than transforming existing content.</p>
-            <p><strong>How to use:</strong> Highlight reference text on a webpage, right-click, choose "Write Draft" from the "Tabetha Weaver Writing" menu, then provide instructions for what you'd like created.</p>
-        </div>
+    <!-- ========== INFO SECTION ========== -->
+    <div class="info-section">
+        <h2>ℹ️ API Information</h2>
         
-        <div class="writer-info">
-            <h4>✍️ Write Draft</h4>
-            <p>Generates new content based on selected text and your instructions.</p>
-            <p><strong>Example Use Cases:</strong></p>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-                <li>Selected product features → "Write a marketing description"</li>
-                <li>Selected meeting notes → "Draft a thank-you email"</li>
-                <li>Selected article excerpt → "Create a blog post introduction"</li>
-                <li>Selected bullet points → "Write a professional summary"</li>
-            </ul>
+        <div class="info-intro">
+            <p>📚 Learn about the AI tools available in Tabetha Weaver and how to use them effectively</p>
+        </div>
+
+        <!-- TEXT REWRITER API -->
+        <div class="api-section">
+            <h3>✏️ Text Rewriter API</h3>
+            
+            <div class="info-box">
+                <h4>What is the Rewriter API?</h4>
+                <p><strong>Purpose:</strong> The Rewriter API takes existing text and transforms it according to your needs — changing tone, removing redundancy, or simplifying language.</p>
+                <p><strong>How to use:</strong> Highlight any text on a webpage, right-click, and choose your preferred rewriting style from the "Tabetha Weaver Rewriting" menu.</p>
+            </div>
+            
+            <div class="rewriter-info">
+                <h4>🧒 Simplify — Explain Like I'm 5</h4>
+                <p>Rephrases text using simpler words and concepts. Excellent for academic papers or complex jargon. Makes content accessible to everyone.</p>
+                <p><em>Example: Technical documentation → Easy-to-understand explanation</em></p>
+            </div>
+            
+            <div class="rewriter-info">
+                <h4>💼 Make Formal — Professional Tone</h4>
+                <p>Increases the formality of text to suit business or academic audiences. Transforms casual writing into professional communication.</p>
+                <p><em>Example: Casual message → Professional email</em></p>
+            </div>
+            
+            <div class="rewriter-info">
+                <h4>😊 Make Casual — Friendly Tone</h4>
+                <p>Lowers formality for social media or internal team communication. Makes formal text more approachable and friendly.</p>
+                <p><em>Example: Corporate announcement → Social media post</em></p>
+            </div>
+            
+            <div class="rewriter-info">
+                <h4>✂️ De-Redundify — Tighten Up Text</h4>
+                <p>Removes redundancies and less-important information to fit word limits. Makes text more concise while preserving meaning.</p>
+                <p><em>Example: 500-word draft → 200-word concise version</em></p>
+            </div>
+        </div>
+
+        <!-- TEXT WRITER API -->
+        <div class="api-section">
+            <h3>✍️ Text Writer API</h3>
+            
+            <div class="info-box">
+                <h4>What is the Writer API?</h4>
+                <p><strong>Purpose:</strong> The Writer API creates NEW, original content based on your instructions and reference material. It generates fresh text rather than transforming existing content.</p>
+                <p><strong>How to use:</strong> Highlight reference text on a webpage, right-click, choose "Write Draft" from the "Tabetha Weaver Writing" menu, then provide instructions for what you'd like created.</p>
+            </div>
+            
+            <div class="writer-info">
+                <h4>✍️ Write Draft</h4>
+                <p>Generates new content based on selected text and your instructions.</p>
+                <p><strong>Example Use Cases:</strong></p>
+                <ul>
+                    <li>Selected product features → "Write a marketing description"</li>
+                    <li>Selected meeting notes → "Draft a thank-you email"</li>
+                    <li>Selected article excerpt → "Create a blog post introduction"</li>
+                    <li>Selected bullet points → "Write a professional summary"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- COMPARISON TABLE -->
+        <div class="api-section">
+            <h3>🔍 Writer vs Rewriter Comparison</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>✍️ Writer API</th>
+                        <th>✏️ Rewriter API</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Primary Goal</strong></td>
+                        <td>Generate new, original content</td>
+                        <td>Revise and restructure existing text</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Input</strong></td>
+                        <td>A writing prompt/task + reference text</td>
+                        <td>Existing text to transform</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Example Task</strong></td>
+                        <td>"Write a thank-you note"</td>
+                        <td>"Make this thank-you note more formal"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Output</strong></td>
+                        <td>Newly created text</td>
+                        <td>Transformed version of original</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Use When</strong></td>
+                        <td>You need something written from scratch</td>
+                        <td>You want to change existing text</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <div class="option-group">
-        <h3>🔍 Writer vs Rewriter Comparison</h3>
-        <table class="comparison-table">
-            <thead>
-                <tr>
-                    <th>Feature</th>
-                    <th>✍️ Writer API</th>
-                    <th>✏️ Rewriter API</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Primary Goal</strong></td>
-                    <td>Generate new, original content</td>
-                    <td>Revise and restructure existing text</td>
-                </tr>
-                <tr>
-                    <td><strong>Input</strong></td>
-                    <td>A writing prompt/task + reference text</td>
-                    <td>Existing text to transform</td>
-                </tr>
-                <tr>
-                    <td><strong>Example Task</strong></td>
-                    <td>"Write a thank-you note"</td>
-                    <td>"Make this thank-you note more formal"</td>
-                </tr>
-                <tr>
-                    <td><strong>Output</strong></td>
-                    <td>Newly created text</td>
-                    <td>Transformed version of original</td>
-                </tr>
-                <tr>
-                    <td><strong>Use When</strong></td>
-                    <td>You need something written from scratch</td>
-                    <td>You want to change existing text</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <button id="save-options">💾 Save Settings</button>
-    <p id="status"></p>
 
     <script src="options.js"></script>
 </body>

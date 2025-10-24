@@ -18,9 +18,9 @@ export async function groupTabs() {
     }
 
     if (debugMode) {
+      console.log("✅ Tab Grouping API loaded");
       console.log("🧠 [DEBUG][Tab Grouping]: Starting...");
     }
-    console.log("✅ Tab Grouping API loaded");
 
     if (activeGroupingController) {
       if (debugMode) {
@@ -47,7 +47,6 @@ export async function groupTabs() {
     if (debugMode) {
       console.log(`🪟 [DEBUG]: Window ID: ${currentWindowId}`);
     }
-    console.log(`🪟 Window: ${currentWindowId}`);
 
     // Update status: ANALYZING
     await chrome.storage.local.set({
@@ -67,7 +66,6 @@ export async function groupTabs() {
     if (debugMode) {
       console.log(`📊 [DEBUG]: Found ${tabs.length} total tabs`);
     }
-    console.log(`📊 Found ${tabs.length} tabs`);
 
     if (currentSignal.aborted) throw new Error("Cancelled");
 
@@ -85,7 +83,6 @@ export async function groupTabs() {
     if (debugMode) {
       console.log(`✅ [DEBUG]: ${accessibleTabs.length} accessible tabs`);
     }
-    console.log(`✅ ${accessibleTabs.length} accessible tabs`);
 
     if (accessibleTabs.length < 2) {
       throw new Error("Need at least 2 accessible tabs.");
@@ -110,8 +107,8 @@ export async function groupTabs() {
     // ========== STEP 2: ASK AI TO NAME GROUPS ==========
     if (debugMode) {
       console.log("📤 [DEBUG]: Sending domain groups to AI for naming...");
+      console.log("📤 Asking AI for group names...");
     }
-    console.log("📤 Asking AI for group names...");
 
     // Get a tab to run AI in
     const targetTab = accessibleTabs[0];
@@ -133,7 +130,6 @@ export async function groupTabs() {
       if (debugMode) {
         console.error("❌ [DEBUG]: AI execution failed:", e);
       }
-      console.error("❌ AI naming failed:", e.message);
       throw new Error(`AI naming failed: ${e.message}`);
     }
 
@@ -141,8 +137,8 @@ export async function groupTabs() {
 
     if (debugMode) {
       console.log("📥 [DEBUG]: AI naming response received");
+      console.log("📥 AI naming complete");
     }
-    console.log("📥 AI naming complete");
 
     if (aiResult.error) {
       throw new Error(aiResult.error);
@@ -157,7 +153,6 @@ export async function groupTabs() {
     if (debugMode) {
       console.log(`📋 [DEBUG]: ${Object.keys(namedGroups).length} groups ready to create`);
     }
-    console.log(`📋 Creating ${Object.keys(namedGroups).length} groups...`);
 
     // Update status: GROUPING
     await chrome.storage.local.set({
@@ -300,7 +295,6 @@ export async function groupTabs() {
         if (debugMode) {
           console.log(`✅ [DEBUG]: Created "${groupName}" (${validTabIds.length} tabs, ID: ${groupId})`);
         }
-        console.log(`✅ Created: "${groupName}" (${validTabIds.length} tabs)`);
 
         // ✅ Shorter delay between groups
         await new Promise(r => setTimeout(r, 25));
@@ -321,7 +315,7 @@ export async function groupTabs() {
     // Complete
     const summary = report.map(g => `📌 ${g.name} (${g.tabCount} tabs)`).join('\n');
     const failedSummary = failedGroups.length > 0 
-      ? `\n\n⚠️ Failed to create ${failedGroups.length} groups`
+      ? `\n\n⚠️ Failed to create ${failedGroups.length} groups\nTry again (if you need)...`
       : '';
 
     if (debugMode) {
@@ -492,9 +486,9 @@ Start:`;
 
     if (debug) {
       console.log("✅ [DEBUG][AI]: Session ready");
+      console.log("🤖 AI naming groups...");
     }
 
-    console.log("🤖 AI naming groups...");
 
     const params = await LanguageModel.params();
 
@@ -582,7 +576,7 @@ Start:`;
     }
 
     if (Object.keys(namedGroups).length === 0) {
-      throw new Error("No valid group names created from AI response.");
+      throw new Error("No valid group names created from AI response.\nPlease try again.");
     }
 
     if (debug) {
@@ -590,8 +584,8 @@ Start:`;
       Object.entries(namedGroups).forEach(([name, ids]) => {
         console.log(`  📌 "${name}": ${ids.length} tabs`);
       });
+      console.log("✅ AI naming complete");
     }
-    console.log("✅ AI naming complete");
 
     return { namedGroups, error: null };
 
