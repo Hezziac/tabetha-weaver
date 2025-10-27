@@ -37,7 +37,7 @@ This extension uses experimental Chrome APIs and requires a specific setup to ru
 
 ### **Step 1: Enable Chrome AI Flags**
 
-Navigate to `chrome://flags` and ensure these crucial features are explicitly set:
+Navigate to `chrome://flags#FLAG_NAME` and ensure these crucial features are explicitly set:
 
 | Flag Name | Value to Set | Purpose |
 | :--- | :--- | :--- |
