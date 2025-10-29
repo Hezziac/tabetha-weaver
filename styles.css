@@ -140,7 +140,7 @@ select:hover {
 }
 
 #prompt-input {
-    width: 100%;
+    width: 97%;
     padding: 10px 40px 10px 12px; /* extra right padding for button */
     border: 2px solid #ddd;
     border-radius: 8px;

@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return false;
     };
 
-    // Initialize UI
+        // Initialize UI
     const updateUI = async () => {
         const hasGrouping = await checkTabGroupingResults();
         if (hasGrouping) return;
@@ -585,13 +585,97 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (hasImage) return;
         }
 
+        // 📍 CHECK FOR PASTED TEXT SUMMARY FIRST
+        const pastedData = await chrome.storage.local.get('pasted_text_status');
+        if (pastedData['pasted_text_status'] && !outputDiv.innerText.includes('🖼️')) {
+            const data = pastedData['pasted_text_status'];
+            
+            if (data.status === 'complete' && data.summary) {
+                clearElement(outputDiv);
+                
+                outputDiv.innerText = data.summary;
+                appendToLog(`✅ [Pasted Summary]: Completed`);
+                
+                // 📍 ADD BUTTONS FOR PASTED SUMMARY
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.marginTop = '15px';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = '📋 Copy Summary';
+                copyBtn.style.marginRight = '10px';
+                copyBtn.className = 'action-button';
+                copyBtn.onclick = async () => {
+                    await navigator.clipboard.writeText(data.summary);
+                    copyBtn.textContent = '✅ Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋 Copy Summary';
+                    }, 2000);
+                };
+                buttonContainer.appendChild(copyBtn);
+                
+                const clearBtn = document.createElement('button');
+                clearBtn.textContent = '🧹 Clear';
+                clearBtn.className = 'action-button';
+                clearBtn.onclick = async () => {
+                    await chrome.storage.local.remove('pasted_text_status');
+                    outputDiv.innerText = '👋 Hi there! I\'m Tabetha. How can I help you today?';
+                    appendToLog('🧹 Cleared summary');
+                };
+                buttonContainer.appendChild(clearBtn);
+                
+                outputDiv.appendChild(buttonContainer);
+                return;
+            } else if (data.status === 'pending') {
+                outputDiv.innerText = '⏳ Tabetha is still working on that summary...';
+                appendToLog(`⏳ [Pasted Summary]: In progress...`);
+                return;
+            } else if (data.status === 'error') {
+                outputDiv.innerText = `❌ Error: ${data.message || 'Unknown error'}`;
+                appendToLog(`❌ [Pasted Summary]: ${data.message}`);
+                return;
+            }
+        }
+
+        // 📍 THEN CHECK PAGE SUMMARY
         const storedData = await chrome.storage.local.get(tabUrl);
         const data = storedData[tabUrl];
 
         if (data && !outputDiv.innerText.includes('🖼️')) {
             if (data.status === 'complete' && data.summary) {
+                clearElement(outputDiv);
+                
                 outputDiv.innerText = data.summary;
                 appendToLog(`✅ [Page Summary]: Completed`);
+                
+                // 📍 ADD BUTTONS FOR PAGE SUMMARY
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.marginTop = '15px';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = '📋 Copy Summary';
+                copyBtn.style.marginRight = '10px';
+                copyBtn.className = 'action-button';
+                copyBtn.onclick = async () => {
+                    await navigator.clipboard.writeText(data.summary);
+                    copyBtn.textContent = '✅ Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋 Copy Summary';
+                    }, 2000);
+                };
+                buttonContainer.appendChild(copyBtn);
+                
+                const clearBtn = document.createElement('button');
+                clearBtn.textContent = '🧹 Clear';
+                clearBtn.className = 'action-button';
+                clearBtn.onclick = async () => {
+                    await chrome.storage.local.remove(tabUrl);
+                    outputDiv.innerText = '👋 Hi there! I\'m Tabetha. How can I help you today?';
+                    appendToLog('🧹 Cleared summary');
+                };
+                buttonContainer.appendChild(clearBtn);
+                
+                outputDiv.appendChild(buttonContainer);
+                
             } else if (data.status === 'pending') {
                 outputDiv.innerText = '⏳ Tabetha is still working on that summary...';
                 appendToLog(`⏳ [Page Summary]: In progress...`);
@@ -908,21 +992,67 @@ async function cancelGrouping() {
         if (!data) return;
 
         let prefix;
-        if (tabDataChange) prefix = 'Page Summary';
-        else if (pasteDataChange) prefix = 'Pasted Summary';
-        else if (chatDataChange) prefix = 'Chat Response';
+        let isSummary = false;
+        
+        if (tabDataChange) {
+            prefix = 'Page Summary';
+            isSummary = true;
+        } else if (pasteDataChange) {
+            prefix = 'Pasted Summary';
+            isSummary = true;
+        } else if (chatDataChange) {
+            prefix = 'Chat Response';
+        }
 
         if (data.status === 'complete') {
+            clearElement(outputDiv);
+            
             outputDiv.innerText = data.summary;
             appendToLog(`✅ [${prefix}]: Completed`, true);
+            
             if (chatDataChange && data.prompt) {
                 appendToLog(`🗨️ Prompt: "${data.prompt.substring(0, 60)}..."`);
             }
+            
+            // 📍 ADD BUTTONS FOR BOTH SUMMARIES
+            if (isSummary) {
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.marginTop = '15px';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = '📋 Copy Summary';
+                copyBtn.style.marginRight = '10px';
+                copyBtn.className = 'action-button';
+                copyBtn.onclick = async () => {
+                    await navigator.clipboard.writeText(data.summary);
+                    copyBtn.textContent = '✅ Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋 Copy Summary';
+                    }, 2000);
+                };
+                buttonContainer.appendChild(copyBtn);
+                
+                const clearBtn = document.createElement('button');
+                clearBtn.textContent = '🧹 Clear';
+                clearBtn.className = 'action-button';
+                clearBtn.onclick = async () => {
+                    if (tabDataChange) {
+                        await chrome.storage.local.remove(tabUrl);
+                    } else if (pasteDataChange) {
+                        await chrome.storage.local.remove('pasted_text_status');
+                    }
+                    outputDiv.innerText = '👋 Hi there! I\'m Tabetha. How can I help you today?';
+                    appendToLog('🧹 Cleared summary');
+                };
+                buttonContainer.appendChild(clearBtn);
+                
+                outputDiv.appendChild(buttonContainer);
+            }
+            
         } else if (data.status === 'error') {
             outputDiv.innerText = `❌ Error: ${data.message}`;
             appendToLog(`❌ [${prefix}]: ${data.message}`);
         }
     });
     
-    appendToLog("✅ Extension Ready", true);
 });

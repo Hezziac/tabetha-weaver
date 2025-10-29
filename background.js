@@ -73,7 +73,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 
     const defaults = {
         summarizerType: 'teaser',
-        summaryLength: 'medium',
+        summaryLength: 'short',
         debugMode: false
     };
 
@@ -353,7 +353,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     chrome.storage.local.set({
                         [request.url]: { status: 'complete', summary: finalSummary.result }
                     });
-                    if (debugMode) console.log('✅ Summarization complete');
+                    if (debugMode) {
+                        console.log("SUMMARTION RESULT:", finalSummary.result);
+                        console.log('✅ Summarization complete');
+                        
+                    }
                 } else {
                     throw new Error('Tabetha couldn\'t produce a summary.');
                 }
